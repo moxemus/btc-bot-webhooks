@@ -4,19 +4,43 @@ namespace src\config;
 
 use PDO;
 
-class DB
+final class DB
 {
-    private string $dbhost = 'localhost';
-    private string $dbuser = 'root';
-    private string $dbpass = 'root';
-    private string $dbname = 'telegram_btc_bot';
+    static private PDO $dbh;
 
-    public function connect(): PDO
+    static private string $host     = 'localhost';
+    static private string $dbname   = 'telegram';
+    static private string $user     = 'root';
+    static private string $password = 'root';
+
+
+    static private function connect()
     {
-        $mysql_connect_str = "mysql:host=$this->dbhost;dbname=$this->dbname";
-        $dbConnection = new PDO($mysql_connect_str, $this->dbuser, $this->dbpass);
-        $dbConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        if (empty(self::$dbh))
+        {
+            self::$dbh = new PDO('mysql:host=' . DB::$host . ';dbname=' . DB::$dbname, DB::$user, DB::$password);
+        }
+    }
 
-        return $dbConnection;
+    static public function query($sql)
+    {
+        self::connect();
+
+        return self::$dbh->query($sql, PDO::FETCH_ASSOC)->fetchAll();
+    }
+
+    static public function queryOne($sql)
+    {
+        self::connect();
+
+        return self::$dbh->query($sql, PDO::FETCH_ASSOC)->fetch(PDO::FETCH_OBJ)->val;
+    }
+
+    static public function exec($sql)
+    {
+        self::connect();
+
+        self::$dbh->prepare($sql);
+        self::$dbh->exec($sql);
     }
 }

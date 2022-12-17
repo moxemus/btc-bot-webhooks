@@ -8,6 +8,11 @@ class BlockchainAPI extends BaseRateAPI
 
     function getRate(): int
     {
-        return 0;
+        $info = file_get_contents($this->url);
+        $info = json_decode($info, true);
+
+        $rate = $info['USD']['last'] ?? 0;
+
+        return (int)$rate; //stristr($rate, '.', true);
     }
 }
