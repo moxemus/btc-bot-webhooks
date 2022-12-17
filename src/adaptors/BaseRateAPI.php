@@ -1,6 +1,8 @@
 <?php
 
-abstract class Base
+namespace src\adaptors;
+
+abstract class BaseRateAPI
 {
     protected string $url;
 

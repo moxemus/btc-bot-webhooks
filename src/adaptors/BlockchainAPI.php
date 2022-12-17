@@ -1,6 +1,8 @@
 <?php
 
-class BlockchainInfo extends Base
+namespace src\adaptors;
+
+class BlockchainAPI extends BaseRateAPI
 {
     protected string $url = 'https://blockchain.info/ticker';
 

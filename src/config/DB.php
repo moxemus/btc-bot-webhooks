@@ -1,5 +1,9 @@
 <?php
 
+namespace src\config;
+
+use PDO;
+
 class DB
 {
     private string $dbhost = 'localhost';
