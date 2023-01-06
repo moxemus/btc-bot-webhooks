@@ -9,30 +9,41 @@ use src\handlers\Telegram;
 
 $app = AppFactory::create();
 
-$app->options('/{routes:.+}', function (Request $request, Response $response, $args)
+$app->options('/{routes:.+}', function (Request $request, Response $response)
 {
     return $response;
 });
 
-//$app->add(function ($req, $res, $next)
-//{
-//    $response = $next($req, $res);
-//
-//    return $response
-//        ->withHeader('Access-Control-Allow-Origin', '*')
-//        ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-//        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-//});
-
-$app->get('/', function (Request $request, $response, $args) {
+/**
+ * Test request
+ *
+ */
+$app->get('/', function (Request $request, $response)
+{
 
     $response->getBody()->write('Hello Iam alive!');
 
     return $response;
 });
 
-$app->post('/webhook', function (Request $request, Response $response, $args) {
+/**
+ * Request for mass-mailing
+ * Scheduler calls it every hour
+ *
+ */
+$app->post('/mail', function (Request $request, Response $response)
+{
+    $handler = new Telegram();
+    $handler->mail();
+});
 
+/**
+ * Webhook request for Telegram API
+ * Telegram calls it every time when we have new user message
+ *
+ */
+$app->post('/webhook', function (Request $request, Response $response)
+{
     $json = $request->getBody();
     $data = json_decode($json, true);
 
@@ -40,9 +51,8 @@ $app->post('/webhook', function (Request $request, Response $response, $args) {
     if ($chatId)
     {
         $handler = new Telegram();
-        $result = $handler->sendCurrentRate($chatId);
 
-        if ($result === true)
+        if ($handler->sendCurrentRate($chatId))
         {
             $response->getBody()->write('success' . $chatId);
         }
