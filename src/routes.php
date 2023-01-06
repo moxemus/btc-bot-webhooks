@@ -20,9 +20,7 @@ $app->options('/{routes:.+}', function (Request $request, Response $response)
  */
 $app->get('/', function (Request $request, $response)
 {
-
     $response->getBody()->write('Hello Iam alive!');
-
     return $response;
 });
 

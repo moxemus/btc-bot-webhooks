@@ -25,6 +25,7 @@ class Telegram
             $response = curl_exec($ch);
             curl_close($ch);
 
+            // TODO : Add checking body for handling result
             // Then, after your curl_exec call:
 //            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
 //            $jsonBody    = substr($response, $header_size);
