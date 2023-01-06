@@ -62,7 +62,7 @@ class Telegram
         return $this->telegramAdaptor->sendMessage($chatId, $text);
     }
 
-    protected function getRateMessage(): bool
+    protected function getRateMessage(): string
     {
         $currentRate = $this->apiAdaptor->getRate();
         $lastRate    = DB::query("SELECT val from rates where id = 1");
