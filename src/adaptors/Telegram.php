@@ -9,7 +9,7 @@ class Telegram
     protected string $url   = 'https://api.telegram.org/bot';
     protected string $token = '';
 
-    public function sendMessage(int $chatId, string $text): void
+    public function sendMessage(int $chatId, string $text): bool
     {
         try {
             $fullUrl = $this->url . $this->token. "/sendMessage?chat_id=" . $chatId
@@ -22,10 +22,18 @@ class Telegram
             ];
 
             curl_setopt_array($ch, $optArray);
-            curl_exec($ch);
+            $response = curl_exec($ch);
             curl_close($ch);
 
+            // Then, after your curl_exec call:
+//            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+//            $jsonBody    = substr($response, $header_size);
+//            return $jsonBody['ok'] === true;
+
         } catch (Throwable $exception) {
+            return false;
         }
+
+        return true;
     }
 }

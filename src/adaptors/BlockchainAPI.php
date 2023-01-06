@@ -13,6 +13,6 @@ class BlockchainAPI extends BaseRateAPI
 
         $rate = $info['USD']['last'] ?? 0;
 
-        return (int)$rate; //stristr($rate, '.', true);
+        return (int)$rate;
     }
 }
