@@ -5,13 +5,23 @@ namespace src;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
-use src\handlers\Telegram;
+use src\components\telegram\Handler as TelegramHandler;
+use src\components\telegram\Response as TelegramResponse;
+use src\config\DB;
+use src\config\Logger;
 
 $app = AppFactory::create();
 
+/**
+ * Options request for all routes
+ *
+ */
 $app->options('/{routes:.+}', function (Request $request, Response $response)
 {
-    return $response;
+    return $response
+        ->withHeader('Access-Control-Allow-Origin', 'https://btc-bot.herokuapp.com')
+        ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
+        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
 });
 
 /**
@@ -20,7 +30,7 @@ $app->options('/{routes:.+}', function (Request $request, Response $response)
  */
 $app->get('/', function (Request $request, $response)
 {
-    $response->getBody()->write('Hello Iam alive!');
+    $response->getBody()->write("Hello I'm alive!");
     return $response;
 });
 
@@ -29,30 +39,97 @@ $app->get('/', function (Request $request, $response)
  * Scheduler calls it every hour
  *
  */
-$app->post('/mail', function (Request $request, Response $response)
+$app->get('/mail', function (Request $request, Response $response)
 {
-    $handler = new Telegram();
+    $handler = new TelegramHandler();
     $handler->mail();
 });
 
 /**
- * Webhook request for Telegram API
- * Telegram calls it every time when we have new user message
+ * Webhook request for telegram API
+ * telegram calls it every time when we have new user message
  *
  */
 $app->post('/webhook', function (Request $request, Response $response)
 {
     $json = $request->getBody();
-    $data = json_decode($json, true);
+    $responseDate = json_decode($json, true);
 
-    $chatId = $data['message']['from']['id'] ?? null;
-    if ($chatId)
+    Logger::logToDB($json, Logger::TELEGRAM_WEBHOOK_REQUEST);
+
+    $telegramResponse  = new TelegramResponse($responseDate);
+    $handler           = new TelegramHandler();
+
+    # Handling
+    if ($telegramResponse->isValid)
     {
-        $handler = new Telegram();
+        $user = DB::queryOne("select * from users where id = $telegramResponse->id");
 
-        if ($handler->sendCurrentRate($chatId))
+        if ($telegramResponse->isCommand)
         {
-            $response->getBody()->write('success' . $chatId);
+            # Show rate
+            if ($telegramResponse->text == TelegramResponse::COMMAND_SHOW_RATE)
+            {
+                $handler->sendCurrentRate($user->id);
+                return $response;
+            }
+
+
+            if ($telegramResponse->isCallback)
+            {
+                $callbackId = $responseDate['callback_query']['id'] ?? null;
+
+                if (is_null($callbackId)) return $response;
+
+                # Sending users count to Admin
+                if ($telegramResponse->text == TelegramResponse::COMMAND_USERS && $user->is_admin == 1)
+                {
+                    $handler->sendUsers($callbackId);
+                }
+
+                # Setting up schedule answer from User
+                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY)
+                {
+                    $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every day');
+                }
+
+                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR)
+                {
+                    $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every hour');
+                }
+
+                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE)
+                {
+                    $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
+                }
+            }
+            else
+            {
+                # Start command
+                if ($telegramResponse->text == TelegramResponse::COMMAND_START)
+                {
+                    $handler->sendWelcome($user->id);
+                }
+
+                # Setting up schedule
+                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE)
+                {
+                    $handler->sendScheduleMenu($user->id);
+                }
+
+
+            }
+        }
+        else
+        {
+            if ($user->is_admin == 1)
+            {
+                $handler->sendAdminMenu($user->id);
+            }
+            else
+            {
+                $handler->sendCurrentRate($user->id);
+            }
         }
     }
 
