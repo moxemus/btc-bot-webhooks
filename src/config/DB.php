@@ -18,8 +18,7 @@ final class DB
     {
         if (empty(self::$dbh))
         {
-            $repository = new FileRepository(__DIR__ . '/../../config.php');
-            $config     = new Config($repository);
+            $config = new Config(new FileRepository(__DIR__ . '/../../config.php'));
 
             self::$dbh = new PDO('mysql:host=' . $config->get('mysql.host') . ';dbname=' .  $config->get('mysql.dbname'),
                 $config->get('mysql.user'),  $config->get('mysql.password'));

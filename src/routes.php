@@ -2,6 +2,8 @@
 
 namespace src;
 
+use MiladRahimi\PhpConfig\Config;
+use MiladRahimi\PhpConfig\Repositories\FileRepository;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -41,6 +43,12 @@ $app->get('/', function (Request $request, $response)
  */
 $app->get('/mail', function (Request $request, Response $response)
 {
+    $config = new Config(new FileRepository(__DIR__ . '/../../config.php'));
+    if ($request->getHeader('API_TOKEN') != $config->get('api.token'))
+    {
+        return $response->withStatus(401);
+    }
+
     $handler = new TelegramHandler();
     $handler->mail();
 });
@@ -52,6 +60,12 @@ $app->get('/mail', function (Request $request, Response $response)
  */
 $app->post('/webhook', function (Request $request, Response $response)
 {
+    $config = new Config(new FileRepository(__DIR__ . '/../../config.php'));
+    if ($request->getHeader('API_TOKEN') != $config->get('api.token'))
+    {
+        return $response->withStatus(401);
+    }
+
     $json = $request->getBody();
     $responseDate = json_decode($json, true);
 

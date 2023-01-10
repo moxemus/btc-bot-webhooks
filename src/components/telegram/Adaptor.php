@@ -56,8 +56,7 @@ class Adaptor
     {
         try {
 
-            $repository = new FileRepository(__DIR__ . '/../../../config.php');
-            $config     = new Config($repository);
+            $config = new Config(new FileRepository(__DIR__ .  '/../../../config.php'));
 
             $url = $config->get('telegram.url') . $config->get('telegram.token') . '/' . $action;
 

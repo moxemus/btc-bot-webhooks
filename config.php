@@ -9,6 +9,9 @@ return [
     ],
     'telegram' => [
         'url'   => 'https://api.telegram.org/bot',
-        'token' => getenv('TELEGRAM_TOKEN'),
+        'token' => getenv('TELEGRAM_TOKEN')
     ],
+    'api' => [
+        'token' => getenv('API_TOKEN'),
+    ]
 ];
