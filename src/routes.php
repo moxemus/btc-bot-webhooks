@@ -60,10 +60,10 @@ $app->get('/mail', function (Request $request, Response $response)
  */
 $app->post('/webhook', function (Request $request, Response $response)
 {
-//    if ($request->getHeader('X-Telegram-Bot-Api-Secret-Token') != getenv('API_TOKEN'))
-//    {
-//        return $response->withStatus(401);
-//    }
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token')))
+    {
+        return $response->withStatus(401);
+    }
 
     Logger::logToDB(json_encode($request->getHeaders()), 0);
     Logger::logToDB(getenv('API_TOKEN'), 0);
