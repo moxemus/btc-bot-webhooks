@@ -2,13 +2,13 @@
 
 namespace src\components\telegram;
 
-use MiladRahimi\PhpConfig\Repositories\FileRepository;
-use MiladRahimi\PhpConfig\Config;
 use src\config\Logger;
 use Throwable;
 
 class Adaptor
 {
+    const TELEGRAM_URL = 'https://api.telegram.org/bot';
+
     # Requests
     const ACTION_ANSWER_CALLBACK = 'answerCallbackQuery';
     const ACTION_SEND_MESSAGE    = 'sendMessage';
@@ -56,9 +56,7 @@ class Adaptor
     {
         try {
 
-            $config = new Config(new FileRepository(__DIR__ .  '/../../../config.php'));
-
-            $url = $config->get('telegram.url') . $config->get('telegram.token') . '/' . $action;
+            $url = self::TELEGRAM_URL . getenv('TELEGRAM_TOKEN') . '/' . $action;
 
             Logger::logToDB($url, Logger::TELEGRAM_SEND_MESSAGE_REQUEST);
 

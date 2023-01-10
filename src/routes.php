@@ -2,8 +2,6 @@
 
 namespace src;
 
-use MiladRahimi\PhpConfig\Config;
-use MiladRahimi\PhpConfig\Repositories\FileRepository;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -62,8 +60,7 @@ $app->get('/mail', function (Request $request, Response $response)
  */
 $app->post('/webhook', function (Request $request, Response $response)
 {
-    $config = new Config(new FileRepository(__DIR__ . '/../config.php'));
-    if ($request->getHeader('X-Telegram-Bot-Api-Secret-Token') != $config->get('api.token'))
+    if ($request->getHeader('X-Telegram-Bot-Api-Secret-Token') != getenv('API_TOKEN'))
     {
         return $response->withStatus(401);
     }

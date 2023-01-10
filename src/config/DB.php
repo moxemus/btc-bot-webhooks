@@ -2,26 +2,18 @@
 
 namespace src\config;
 
-use MiladRahimi\PhpConfig\Exceptions\InvalidConfigFileException;
-use MiladRahimi\PhpConfig\Repositories\FileRepository;
-use MiladRahimi\PhpConfig\Config;
 use PDO;
 
 final class DB
 {
     private static PDO $dbh;
 
-    /**
-     * @throws InvalidConfigFileException
-     */
     private static function connect()
     {
         if (empty(self::$dbh))
         {
-            $config = new Config(new FileRepository(__DIR__ . '/../../config.php'));
-
-            self::$dbh = new PDO('mysql:host=' . $config->get('mysql.host') . ';dbname=' .  $config->get('mysql.dbname'),
-                $config->get('mysql.user'),  $config->get('mysql.password'));
+            self::$dbh = new PDO('mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' .  getenv('MYSQL_DATABASE'),
+                getenv('MYSQL_USER'),  getenv('MYSQl_PASSWORD'));
         }
     }
 
