@@ -2,13 +2,13 @@
 
 return [
     'mysql' => [
-        'host'     => 'localhost',
-        'user'     => 'root',
-        'password' => 'root',
-        'dbname'   => 'telegram'
+        'host'     => getenv('MYSQL_HOST'),
+        'user'     => getenv('MYSQL_USER'),
+        'password' => getenv('MYSQL_PASSWORD'),
+        'dbname'   => getenv('MYSQL_DATABASE')
     ],
     'telegram' => [
         'url'   => 'https://api.telegram.org/bot',
-        'token' => 'your-telegram-token',
+        'token' => getenv('TELEGRAM_TOKEN'),
     ],
 ];
