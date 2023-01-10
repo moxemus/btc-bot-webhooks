@@ -44,7 +44,7 @@ $app->get('/', function (Request $request, $response)
 $app->get('/mail', function (Request $request, Response $response)
 {
     $config = new Config(new FileRepository(__DIR__ . '/../config.php'));
-    if ($request->getHeader('secret_token') != $config->get('api.token'))
+    if ($request->getHeader('X-Telegram-Bot-Api-Secret-Token') != $config->get('api.token'))
     {
         return $response->withStatus(401);
     }
@@ -61,7 +61,7 @@ $app->get('/mail', function (Request $request, Response $response)
 $app->post('/webhook', function (Request $request, Response $response)
 {
     $config = new Config(new FileRepository(__DIR__ . '/../config.php'));
-    if ($request->getHeader('secret_token') != $config->get('api.token'))
+    if ($request->getHeader('X-Telegram-Bot-Api-Secret-Token') != $config->get('api.token'))
     {
         return $response->withStatus(401);
     }
