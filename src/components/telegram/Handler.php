@@ -29,20 +29,13 @@ class Handler
 
     public function mail(): void
     {
-        $users = DB::query("SELECT id, is_admin from users");
-
-        if (empty($users)) return;
-
+        $users       = DB::query("SELECT id, is_admin from users");
         $currentRate = $this->apiAdaptor->getRate();
 
         foreach ($users as $user)
         {
             $lastRate = $user['last_rate'] ?? 0;
-            $message  = $this->getRateMessage($currentRate, $lastRate);
-
-            $text = ($user['is_admin'] == 1)
-                ? $message . " " . count($users)
-                : $message;
+            $text     = $this->getRateMessage($currentRate, $lastRate);
 
             $this->telegramAdaptor->sendMessage($user['id'], $text);
             DB::exec("UPDATE users set last_rate = {$currentRate} where id = " . $user['id']);
@@ -95,14 +88,14 @@ class Handler
         return $this->sendCurrentRate($chatId);
     }
 
-    protected function sendMessage(int $chatId, string $text, array $markupParams = []): bool
-    {
-        return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
-    }
-
     public function sendAnswerCallback(int $callbackId, string $text): bool
     {
         return $this->telegramAdaptor->sendAnswerCallback($callbackId, $text);
+    }
+
+    protected function sendMessage(int $chatId, string $text, array $markupParams = []): bool
+    {
+        return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
     }
 
     protected function getRateMessage($currentRate, $lastRate): string

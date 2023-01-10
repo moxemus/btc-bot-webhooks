@@ -6,8 +6,7 @@
     "slim/psr7": "^1.6",
     "ext-pdo": "*",
     "ext-curl": "*",
-    "monolog/monolog": "^3.2",
-    "miladrahimi/phpconfig": "^2.0"
+    "monolog/monolog": "^3.2"
   },
   "autoload": {
     "psr-4": {

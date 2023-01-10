@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ab83e3476ea79565fad01dbc8250c3b4",
+    "content-hash": "6d1eb85caf269cd0951fffb40400ece4",
     "packages": [
         {
             "name": "fig/http-message-util",
@@ -61,61 +61,6 @@
                 "source": "https://github.com/php-fig/http-message-util/tree/1.1.5"
             },
             "time": "2020-11-24T22:02:12+00:00"
-        },
-        {
-            "name": "miladrahimi/phpconfig",
-            "version": "v2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/miladrahimi/phpconfig.git",
-                "reference": "fe728140867705ac595338d4ec0d3336f7e18a62"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/miladrahimi/phpconfig/zipball/fe728140867705ac595338d4ec0d3336f7e18a62",
-                "reference": "fe728140867705ac595338d4ec0d3336f7e18a62",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "php": ">=7.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "6.*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "MiladRahimi\\PhpConfig\\": "src/MiladRahimi/PhpConfig/",
-                    "MiladRahimi\\PhpConfig\\Tests\\": "tests/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Milad Rahimi",
-                    "email": "info@miladrahimi.com",
-                    "homepage": "http://miladrahimi.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "A PHP configuration tool",
-            "homepage": "https://github.com/miladrahimi/phpconfig",
-            "keywords": [
-                "config",
-                "configuration",
-                "setting"
-            ],
-            "support": {
-                "email": "info@miladrahimi.com",
-                "issues": "https://github.com/miladrahimi/phpconfig/issues",
-                "source": "https://github.com/miladrahimi/phpconfig/issues"
-            },
-            "abandoned": true,
-            "time": "2018-09-09T12:46:53+00:00"
         },
         {
             "name": "monolog/monolog",
