@@ -13,7 +13,7 @@ final class DB
         if (empty(self::$dbh))
         {
             self::$dbh = new PDO('mysql:host=' . getenv('MYSQL_HOST') . ';dbname=' .  getenv('MYSQL_DATABASE'),
-                getenv('MYSQL_USER'),  getenv('MYSQl_PASSWORD'));
+                getenv('MYSQL_USER'),  getenv('MYSQL_PASSWORD'));
         }
     }
 
