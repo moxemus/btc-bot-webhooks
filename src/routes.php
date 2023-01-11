@@ -41,7 +41,7 @@ $app->get('/', function (Request $request, $response)
  */
 $app->get('/mail', function (Request $request, Response $response)
 {
-    if (!in_array(getenv('Authorization'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token')))
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization')))
     {
         return $response->withStatus(401);
     }
