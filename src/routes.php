@@ -42,7 +42,7 @@ $app->get('/', function (Request $request, $response)
 $app->get('/mail', function (Request $request, Response $response)
 {
     $ipAddress = $request->getServerParam('REMOTE_ADDR');
-    if (!in_array($ipAddress, ["localhost", "127.0.0.1", "btc-bot.herokuapp.com"]))
+    if (!in_array($ipAddress, ["localhost", "127.0.0.1", "btc-bot.herokuapp.com", "::1"]))
     {
         return $response->withStatus(401);
     }
@@ -55,7 +55,7 @@ $app->get('/mail', function (Request $request, Response $response)
 
 /**
  * Webhook request for telegram API
- * telegram calls it every time when we have new user message
+ * Telegram calls it every time when we have new user message
  *
  */
 $app->post('/webhook', function (Request $request, Response $response)
@@ -64,9 +64,6 @@ $app->post('/webhook', function (Request $request, Response $response)
     {
         return $response->withStatus(401);
     }
-
-    Logger::logToDB(json_encode($request->getHeaders()), 0);
-    Logger::logToDB(getenv('API_TOKEN'), 0);
 
     $json = $request->getBody();
     $responseDate = json_decode($json, true);
