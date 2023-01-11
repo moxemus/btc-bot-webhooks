@@ -41,8 +41,7 @@ $app->get('/', function (Request $request, $response)
  */
 $app->get('/mail', function (Request $request, Response $response)
 {
-    $ipAddress = $request->getServerParam('REMOTE_ADDR');
-    if (!in_array($ipAddress, ["localhost", "127.0.0.1", "btc-bot.herokuapp.com", "::1"]))
+    if (!in_array(getenv('Authorization'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token')))
     {
         return $response->withStatus(401);
     }
