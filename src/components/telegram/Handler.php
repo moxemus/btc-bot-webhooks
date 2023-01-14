@@ -75,7 +75,7 @@ class Handler
         $sign = $matches[1] ?? null;
         $rate = $matches[2] ?? null;
 
-        if (!in_array($sign, ['more', 'less']) || is_null($rate))
+        if (!in_array($sign, ['more', 'less']) || $rate < 0)
         {
             $this->sendMessage($userId, 'Please give correct info');
         }
@@ -84,6 +84,8 @@ class Handler
             $isBigger = (int)($sign == 'more');
 
             DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ({$userId}, {$rate}, {$isBigger} )");
+
+            $this->sendMessage($userId, 'Alarm configured');
         }
     }
 
@@ -133,11 +135,12 @@ class Handler
         if (ArrayHelper::isEmpty($raw))
         {
             $userId    = $response->id;
-            $firstName = $response->userInfo['first_name'] ?? '';
-            $lastName  = $response->userInfo['last_name'] ?? '';
+            $firstName = $response->userInfo['first_name']    ?? '';
+            $lastName  = $response->userInfo['last_name']     ?? '';
             $language  = $response->userInfo['language_code'] ?? '';
+            $username  = $response->userInfo['username']      ?? '';
 
-            DB::exec("insert into users (id, first_name, last_name, language_code) values ($userId, '$firstName', '$lastName', '$language')");
+            DB::exec("insert into users (id, first_name, last_name, username, language_code) values ($userId, '$firstName', '$lastName', '$username', '$language')");
         }
 
         $this->sendMessage($response->id, 'Welcome to BTC rate bot!');
