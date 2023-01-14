@@ -132,9 +132,9 @@ class Handler
         if (empty($raw))
         {
             $userId    = $response->id;
-            $firstName = $response->userInfo['first_name'];
-            $lastName  = $response->userInfo['last_name'];
-            $language  = $response->userInfo['language_code'];
+            $firstName = $response->userInfo['first_name'] ?? '';
+            $lastName  = $response->userInfo['last_name'] ?? '';
+            $language  = $response->userInfo['language_code'] ?? '';
 
             DB::exec("insert into users (id, first_name, last_name, username, language_code) values ($userId, '$firstName', '$lastName', '$language')");
         }
