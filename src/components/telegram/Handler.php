@@ -136,7 +136,7 @@ class Handler
             $lastName  = $response->userInfo['last_name'] ?? '';
             $language  = $response->userInfo['language_code'] ?? '';
 
-            DB::exec("insert into users (id, first_name, last_name, username, language_code) values ($userId, '$firstName', '$lastName', '$language')");
+            DB::exec("insert into users (id, first_name, last_name, language_code) values ($userId, '$firstName', '$lastName', '$language')");
         }
 
         $this->sendMessage($response->id, 'Welcome to BTC rate bot!');
