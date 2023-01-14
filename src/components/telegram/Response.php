@@ -20,6 +20,7 @@ final class Response
     public  bool   $isCommand  = false;
     public  bool   $isCallback = false;
     public  bool   $isValid    = false;
+    public  array  $userInfo   = [];
 
     public function __construct(array $data)
     {
@@ -40,6 +41,8 @@ final class Response
                 $this->text      = $this->data['message']['text'];;
                 $this->isCommand = $this->text[0] == '/';
             }
+
+            $this->userInfo = $this->data['message']['from'] ?? [];
 
         } catch (\Exception $e)
         {

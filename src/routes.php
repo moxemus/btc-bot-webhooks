@@ -134,7 +134,7 @@ $app->post('/webhook', function (Request $request, Response $response)
                 # Start command
                 if ($telegramResponse->text == TelegramResponse::COMMAND_START)
                 {
-                    $handler->sendWelcome($user->id);
+                    $handler->sendWelcome($telegramResponse);
                 }
                 # Setting up schedule
                 else if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE)

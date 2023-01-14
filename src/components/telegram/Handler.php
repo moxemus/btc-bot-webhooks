@@ -126,10 +126,21 @@ class Handler
         return $this->sendMessage($chatId, 'Set up your notification schedule', $markupParams);
     }
 
-    public function sendWelcome(int $chatId): bool
+    public function sendWelcome(Response $response): bool
     {
-        $this->sendMessage($chatId, 'Welcome to BTC rate bot!');
-        return $this->sendCurrentRate($chatId);
+        $raw = DB::queryOne("select id from users where id = " . $response->id);
+        if (is_null($raw))
+        {
+            $userId    = $response->id;
+            $firstName = $response->userInfo['first_name'];
+            $lastName  = $response->userInfo['last_name'];
+            $language  = $response->userInfo['language_code'];
+
+            DB::exec("insert into users (id, first_name, last_name, username, language_code) values ($userId, '$firstName', '$lastName', '$language')");
+        }
+
+        $this->sendMessage($response->id, 'Welcome to BTC rate bot!');
+        return $this->sendCurrentRate($response->id);
     }
 
     public function sendAlarmInfo(int $chatId): bool
