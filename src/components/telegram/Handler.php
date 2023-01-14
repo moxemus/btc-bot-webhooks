@@ -129,7 +129,7 @@ class Handler
     public function sendWelcome(Response $response): bool
     {
         $raw = DB::queryOne("select id from users where id = " . $response->id);
-        if (is_null($raw))
+        if (is_null($raw->id))
         {
             $userId    = $response->id;
             $firstName = $response->userInfo['first_name'];
