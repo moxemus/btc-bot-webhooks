@@ -12,6 +12,7 @@ final class Response
     const COMMAND_SCHEDULE_DISABLE    = '/schedule_disable';
     const COMMAND_USERS               = '/users';
     const COMMAND_SHOW_RATE           = '/show_rate';
+    const COMMAND_CREATE_ALARM        = '/create_alarm';
 
     private array  $data;
     public  int    $id;

@@ -8,8 +8,9 @@ use src\config\DB;
 
 class Handler
 {
-    const GREEN_SMILE = "\xE2\x9C\x85";
-    const RED_SMILE   = "\xF0\x9F\x94\xBB";
+    const SMILE_GREEN       = "\xE2\x9C\x85";
+    const SMILE_RED         = "\xF0\x9F\x94\xBB";
+    const SMILE_EXCLAMATION = "\xE2\x9D\x97";
 
     protected Adaptor     $telegramAdaptor;
     protected BaseAdaptor $apiAdaptor;
@@ -42,12 +43,55 @@ class Handler
         }
     }
 
+    public function notify(): void
+    {
+        $userAlarms = DB::query("select * from user_alarms");
+        $currentRate = $this->apiAdaptor->getRate();
+
+        foreach ($userAlarms as $alarm)
+        {
+            $userRate = $alarm['rate'];
+            $isBigger = (bool)$alarm['is_bigger'];
+
+            if ($userRate > $currentRate && $isBigger ||
+                $userRate < $currentRate && !$isBigger)
+            {
+                $text = ($isBigger) ? 'more' : 'less';
+
+                $this->telegramAdaptor->sendMessage($alarm['user_id'],
+                    self::SMILE_EXCLAMATION . "BTC costs is {$text} than {$userRate} now - {$currentRate}" . self::SMILE_EXCLAMATION);
+
+                $this->updateUserRate($alarm['user_id'], $currentRate);
+            }
+        }
+    }
+
+    public function setUserAlarm(int $userId, string $text): void
+    {
+        $matches = [];
+        preg_match_all('/alarm (\w+) (\d+)/',$text,$matches);
+
+        $sign = $matches[1] ?? null;
+        $rate = $matches[2] ?? null;
+
+        if (!in_array($sign, ['more', 'less']) || is_null($rate))
+        {
+            $this->sendMessage($userId, 'Please give correct info');
+        }
+        else
+        {
+            $isBigger = (int)($sign == 'more');
+
+            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ({$userId}, {$rate}, {$isBigger} )");
+        }
+    }
+
     public function sendCurrentRate(int $chatId): bool
     {
         $currentRate = $this->apiAdaptor->getRate();
         $lastRate    = (int)DB::queryOne("select last_rate from users where id = {$chatId}")->last_rate;
 
-        DB::exec("UPDATE users set last_rate = {$currentRate} where id = {$chatId}");
+        $this->updateUserRate($chatId, $currentRate);
 
         return $this->sendMessage($chatId, $this->getRateMessage($currentRate, $lastRate));
     }
@@ -88,6 +132,14 @@ class Handler
         return $this->sendCurrentRate($chatId);
     }
 
+    public function sendAlarmInfo(int $chatId): bool
+    {
+        return $this->sendMessage($chatId,
+            "You can get notification when BTC rate will be more/lower than your price.\n" .
+            "Write your alarm template, for example: alarm less 22000 \n"
+        );
+    }
+
     public function sendAnswerCallback(int $callbackId, string $text): bool
     {
         return $this->telegramAdaptor->sendAnswerCallback($callbackId, $text);
@@ -100,9 +152,14 @@ class Handler
 
     protected function getRateMessage($currentRate, $lastRate): string
     {
-        $smile   = ($currentRate >= $lastRate) ? self::GREEN_SMILE: self::RED_SMILE;
+        $smile   = ($currentRate >= $lastRate) ? self::SMILE_GREEN: self::SMILE_RED;
         $message = $currentRate . $smile;
 
         return $message;
+    }
+
+    protected function updateUserRate(int $userId, int $rate): void
+    {
+        DB::exec("UPDATE users set last_rate = {$rate} where id = {$userId}");
     }
 }

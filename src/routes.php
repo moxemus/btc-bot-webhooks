@@ -35,7 +35,7 @@ $app->get('/', function (Request $request, $response)
 });
 
 /**
- * Request for mass-mailing
+ * Scheduler request for mass-mailing
  * Scheduler calls it every hour
  *
  */
@@ -48,6 +48,24 @@ $app->get('/mail', function (Request $request, Response $response)
 
     $handler = new TelegramHandler();
     $handler->mail();
+
+    return $response;
+});
+
+/**
+ * Scheduler request for notify users about their rate alarms
+ * Scheduler calls it every minute
+ *
+ */
+$app->get('/notify', function (Request $request, Response $response)
+{
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization')))
+    {
+        return $response->withStatus(401);
+    }
+
+    $handler = new TelegramHandler();
+    $handler->notify();
 
     return $response;
 });
@@ -86,7 +104,6 @@ $app->post('/webhook', function (Request $request, Response $response)
                 return $response;
             }
 
-
             if ($telegramResponse->isCallback)
             {
                 $callbackId = $responseDate['callback_query']['id'] ?? null;
@@ -98,19 +115,16 @@ $app->post('/webhook', function (Request $request, Response $response)
                 {
                     $handler->sendUsers($callbackId);
                 }
-
                 # Setting up schedule answer from User
-                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY)
+                else if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY)
                 {
                     $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every day');
                 }
-
-                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR)
+                else if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR)
                 {
                     $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every hour');
                 }
-
-                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE)
+                else if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE)
                 {
                     $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
                 }
@@ -122,25 +136,36 @@ $app->post('/webhook', function (Request $request, Response $response)
                 {
                     $handler->sendWelcome($user->id);
                 }
-
                 # Setting up schedule
-                if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE)
+                else if ($telegramResponse->text == TelegramResponse::COMMAND_SCHEDULE)
                 {
                     $handler->sendScheduleMenu($user->id);
                 }
-
-
+                # Setting up alarms
+                else if ($telegramResponse->text == TelegramResponse::COMMAND_CREATE_ALARM)
+                {
+                    $handler->sendAlarmInfo($user->id);
+                }
             }
         }
         else
         {
-            if ($user->is_admin == 1)
+            # If User send just a message without any command
+
+            if(str_starts_with($telegramResponse->text, 'alarm'))
             {
-                $handler->sendAdminMenu($user->id);
+                $handler->setUserAlarm($user->id, $telegramResponse->text);
             }
             else
             {
-                $handler->sendCurrentRate($user->id);
+                if ($user->is_admin == 1)
+                {
+                    $handler->sendAdminMenu($user->id);
+                }
+                else
+                {
+                    $handler->sendCurrentRate($user->id);
+                }
             }
         }
     }
