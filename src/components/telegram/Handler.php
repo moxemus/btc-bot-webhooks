@@ -5,6 +5,7 @@ namespace src\components\telegram;
 use src\components\rateApi\BaseAdaptor;
 use src\components\rateApi\BlockchainAdaptor;
 use src\config\DB;
+use moxemus\array\Helper as ArrayHelper;
 
 class Handler
 {
@@ -129,7 +130,7 @@ class Handler
     public function sendWelcome(Response $response): bool
     {
         $raw = DB::query("select id from users where id = " . $response->id);
-        if (empty($raw))
+        if (ArrayHelper::isEmpty($raw))
         {
             $userId    = $response->id;
             $firstName = $response->userInfo['first_name'] ?? '';

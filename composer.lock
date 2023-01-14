@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6d1eb85caf269cd0951fffb40400ece4",
+    "content-hash": "f3e9027fb9f220ae68d3e05f3943f403",
     "packages": [
         {
             "name": "fig/http-message-util",
@@ -162,6 +162,37 @@
                 }
             ],
             "time": "2022-07-24T12:00:55+00:00"
+        },
+        {
+            "name": "moxemus/array-helper",
+            "version": "v1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/moxemus/array-helper.git",
+                "reference": "d70dba0c571c697c44d85814ef8cc205d19f3d81"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/moxemus/array-helper/zipball/d70dba0c571c697c44d85814ef8cc205d19f3d81",
+                "reference": "d70dba0c571c697c44d85814ef8cc205d19f3d81",
+                "shasum": ""
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "moxemus\\array\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Array helper for PHP",
+            "support": {
+                "issues": "https://github.com/moxemus/array-helper/issues",
+                "source": "https://github.com/moxemus/array-helper/tree/v1.1"
+            },
+            "time": "2023-01-01T20:24:53+00:00"
         },
         {
             "name": "nikic/fast-route",
