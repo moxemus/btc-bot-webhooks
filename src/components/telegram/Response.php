@@ -38,7 +38,7 @@ final class Response
             else
             {
                 $this->id        = (int)$this->data['message']['from']['id'];
-                $this->text      = $this->data['message']['text'];;
+                $this->text      = $this->data['message']['text'] ?? '';
                 $this->isCommand = $this->text[0] == '/';
             }
 
