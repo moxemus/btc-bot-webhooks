@@ -4,8 +4,8 @@ namespace src\components\telegram;
 
 use src\components\rateApi\BaseAdaptor;
 use src\components\rateApi\BlockchainAdaptor;
-use src\config\DB;
 use moxemus\array\Helper as ArrayHelper;
+use src\config\DB;
 
 class Handler
 {
@@ -39,8 +39,10 @@ class Handler
             $lastRate = $user['last_rate'] ?? 0;
             $text     = $this->getRateMessage($currentRate, $lastRate);
 
-            $this->telegramAdaptor->sendMessage($user['id'], $text);
-            DB::exec("UPDATE users set last_rate = {$currentRate} where id = " . $user['id']);
+            if ($this->telegramAdaptor->sendMessage($user['id'], $text))
+            {
+                DB::exec("UPDATE users set last_rate = {$currentRate} where id = " . $user['id']);
+            }
         }
     }
 

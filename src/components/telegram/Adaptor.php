@@ -76,7 +76,7 @@ class Adaptor
 
             curl_close($ch);
 
-            if ($response)
+            if ($response && $status == 200)
             {
                 Logger::logToDB($response, Logger::TELEGRAM_SEND_MESSAGE_RESPONSE);
                 return $response['ok'];
