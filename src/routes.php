@@ -85,11 +85,17 @@ $app->post('/webhook', function (Request $request, Response $response)
     $json = $request->getBody();
     $responseDate = json_decode($json, true);
 
-    Logger::logToDB($json, Logger::TELEGRAM_WEBHOOK_REQUEST);
-
     $telegramResponse  = new TelegramResponse($responseDate);
     $handler           = new TelegramHandler();
 
+    # Ignore banned users
+    $user = DB::queryOne("select active from users where id = " . $telegramResponse->id);
+    if ($user->active === 0)
+    {
+        return $response;
+    }
+
+    Logger::logToDB($json, Logger::TELEGRAM_WEBHOOK_REQUEST);
     Logger::logTelegramResponse($telegramResponse);
 
     # Handling
