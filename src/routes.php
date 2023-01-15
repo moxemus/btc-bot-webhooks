@@ -90,6 +90,8 @@ $app->post('/webhook', function (Request $request, Response $response)
     $telegramResponse  = new TelegramResponse($responseDate);
     $handler           = new TelegramHandler();
 
+    Logger::logTelegramResponse($telegramResponse);
+
     # Handling
     if ($telegramResponse->isValid)
     {
