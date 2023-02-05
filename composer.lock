@@ -165,16 +165,16 @@
         },
         {
             "name": "moxemus/array-helper",
-            "version": "v1.1",
+            "version": "1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/moxemus/array-helper.git",
-                "reference": "d70dba0c571c697c44d85814ef8cc205d19f3d81"
+                "reference": "fd01c5a0dac412f6e080006100741d6923488ade"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/moxemus/array-helper/zipball/d70dba0c571c697c44d85814ef8cc205d19f3d81",
-                "reference": "d70dba0c571c697c44d85814ef8cc205d19f3d81",
+                "url": "https://api.github.com/repos/moxemus/array-helper/zipball/fd01c5a0dac412f6e080006100741d6923488ade",
+                "reference": "fd01c5a0dac412f6e080006100741d6923488ade",
                 "shasum": ""
             },
             "type": "library",
@@ -190,9 +190,9 @@
             "description": "Array helper for PHP",
             "support": {
                 "issues": "https://github.com/moxemus/array-helper/issues",
-                "source": "https://github.com/moxemus/array-helper/tree/v1.1"
+                "source": "https://github.com/moxemus/array-helper/tree/1.4"
             },
-            "time": "2023-01-01T20:24:53+00:00"
+            "time": "2023-02-05T18:29:53+00:00"
         },
         {
             "name": "nikic/fast-route",

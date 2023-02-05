@@ -31,7 +31,7 @@ class Handler
 
     public function mail(): void
     {
-        $users       = DB::query("SELECT id, is_admin from users");
+        $users       = DB::query("SELECT id, is_admin, last_rate from users");
         $currentRate = $this->apiAdaptor->getRate();
 
         foreach ($users as $user)
@@ -169,10 +169,8 @@ class Handler
 
     protected function getRateMessage($currentRate, $lastRate): string
     {
-        $smile   = ($currentRate >= $lastRate) ? self::SMILE_GREEN: self::SMILE_RED;
-        $message = $currentRate . $smile;
-
-        return $message;
+        $smile   = ($currentRate >= $lastRate) ? self::SMILE_GREEN : self::SMILE_RED;
+        return $currentRate . $smile;
     }
 
     protected function updateUserRate(int $userId, int $rate): void
