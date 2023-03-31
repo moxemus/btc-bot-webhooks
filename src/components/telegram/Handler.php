@@ -75,17 +75,17 @@ class Handler
         preg_match_all('/alarm (\w+) (\d+)/',$text,$matches);
 
         $sign = $matches[1] ?? null;
-        $rate = $matches[2] ?? null;
+        $rate = intval($matches[2] ?? 0);
 
-        if (!in_array($sign, ['more', 'less']) || $rate < 0)
+        if (!in_array($sign, ['more', 'less']) || $rate <= 0)
         {
             $this->sendMessage($userId, 'Please give correct info');
         }
         else
         {
-            $isBigger = (int)($sign == 'more');
+            $isBigger = intval($sign == 'more');
 
-            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ({$userId}, {$rate}, {$isBigger} )");
+            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ({$userId}, {$rate}, {$isBigger})");
 
             $this->sendMessage($userId, 'Alarm configured');
         }
