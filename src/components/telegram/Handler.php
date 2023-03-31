@@ -72,7 +72,7 @@ class Handler
     public function setUserAlarm(int $userId, string $text): void
     {
         $matches = [];
-        preg_match_all('/alarm (\w+) (\d+)/',$text,$matches);
+        preg_match('/alarm (\w+) (\d+)/',$text,$matches);
 
         $sign = $matches[1] ?? null;
         $rate = intval($matches[2] ?? 0);
