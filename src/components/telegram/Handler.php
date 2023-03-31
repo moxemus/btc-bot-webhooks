@@ -19,14 +19,9 @@ class Handler
 
     public function __construct(?BaseAdaptor $apiAdaptor = null)
     {
-        if (!$apiAdaptor)
-        {
-            $apiAdaptor = new BlockchainAdaptor();
-        }
-
-        $this->apiAdaptor = $apiAdaptor;
+        $this->apiAdaptor      = $apiAdaptor ?? new BlockchainAdaptor();
         $this->telegramAdaptor = new Adaptor();
-        $this->db = new DB();
+        $this->db              = new DB();
     }
 
     public function mail(): void
@@ -48,13 +43,13 @@ class Handler
 
     public function notify(): void
     {
-        $userAlarms = DB::query("select * from user_alarms");
+        $userAlarms  = DB::query("select * from user_alarms");
         $currentRate = $this->apiAdaptor->getRate();
 
         foreach ($userAlarms as $alarm)
         {
             $userRate = $alarm['rate'];
-            $isBigger = (bool)$alarm['is_bigger'];
+            $isBigger = !!$alarm['is_bigger'];
 
             if ($userRate > $currentRate && $isBigger ||
                 $userRate < $currentRate && !$isBigger)
@@ -75,7 +70,7 @@ class Handler
         preg_match('/alarm (\w+) (\d+)/',$text,$matches);
 
         $sign = $matches[1] ?? null;
-        $rate = intval($matches[2] ?? 0);
+        $rate = $matches[2] ?? 0;
 
         if (!in_array($sign, ['more', 'less']) || $rate <= 0)
         {
@@ -88,7 +83,7 @@ class Handler
             DB::exec("delete from user_alarms where user_id = $userId");
             DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ($userId, $rate, $isBigger)");
 
-            $this->sendMessage($userId, 'Alarm configured');
+            $this->sendMessage($userId, 'New alarm configured');
         }
     }
 
