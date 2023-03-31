@@ -85,7 +85,8 @@ class Handler
         {
             $isBigger = intval($sign == 'more');
 
-            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ({$userId}, {$rate}, {$isBigger})");
+            DB::exec("delete from user_alarms where user_id = $userId");
+            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ($userId, $rate, $isBigger)");
 
             $this->sendMessage($userId, 'Alarm configured');
         }
