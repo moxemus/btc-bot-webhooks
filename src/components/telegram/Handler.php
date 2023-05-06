@@ -26,16 +26,16 @@ class Handler
 
     public function mail(): void
     {
-        $users = DB::query("SELECT id, telegram_id, is_admin, last_rate from users");
+        $users = DB::query("SELECT telegram_id, is_admin, last_rate from users");
         $currentRate = $this->apiAdaptor->getRate();
 
         foreach ($users as $user) {
             $lastRate = $user['last_rate'] ?? 0;
             $text = $this->getRateMessage($currentRate, $lastRate);
 
-            if ($this->telegramAdaptor->sendMessage($user['telegram_id'], $text)) {
-                DB::exec("UPDATE users set last_rate = {$currentRate} where id = " . $user['id']);
-            }
+            $this->telegramAdaptor->sendMessage($user['telegram_id'], $text);
+
+            $this->updateUserRate($user['telegram_id'], $currentRate);
         }
     }
 
@@ -168,8 +168,8 @@ class Handler
         return $currentRate . $smile;
     }
 
-    protected function updateUserRate(int $userId, int $rate): void
+    protected function updateUserRate(int $chatId, int $rate): void
     {
-        DB::exec("UPDATE users set last_rate = {$rate} where telegram_id = {$userId}");
+        DB::exec("UPDATE users set last_rate = {$rate} where telegram_id = {$chatId}");
     }
 }
