@@ -16,8 +16,7 @@ $app = AppFactory::create();
  * Options request for all routes
  *
  */
-$app->options('/{routes:.+}', function (Request $request, Response $response)
-{
+$app->options('/{routes:.+}', function (Request $request, Response $response) {
     return $response
         ->withHeader('Access-Control-Allow-Origin', 'https://btc-bot.herokuapp.com')
         ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
@@ -28,8 +27,7 @@ $app->options('/{routes:.+}', function (Request $request, Response $response)
  * Test request
  *
  */
-$app->get('/', function (Request $request, $response)
-{
+$app->get('/', function (Request $request, $response) {
     $response->getBody()->write("Hello I'm alive!");
     return $response;
 });
@@ -39,10 +37,8 @@ $app->get('/', function (Request $request, $response)
  * Scheduler calls it every hour
  *
  */
-$app->get('/mail', function (Request $request, Response $response)
-{
-    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization')))
-    {
+$app->get('/mail', function (Request $request, Response $response) {
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization'))) {
         return $response->withStatus(401);
     }
 
@@ -57,10 +53,8 @@ $app->get('/mail', function (Request $request, Response $response)
  * Scheduler calls it every minute
  *
  */
-$app->get('/notify', function (Request $request, Response $response)
-{
-    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization')))
-    {
+$app->get('/notify', function (Request $request, Response $response) {
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('Authorization'))) {
         return $response->withStatus(401);
     }
 
@@ -75,23 +69,20 @@ $app->get('/notify', function (Request $request, Response $response)
  * Telegram calls it every time when we have new user message
  *
  */
-$app->post('/webhook', function (Request $request, Response $httpResponse)
-{
-    if (!in_array(getenv('API_TOKEN'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token')))
-    {
+$app->post('/webhook', function (Request $request, Response $httpResponse) {
+    if (!in_array(getenv('API_TOKEN'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token'))) {
         return $httpResponse->withStatus(401);
     }
 
     $json = $request->getBody();
     $responseDate = json_decode($json, true);
 
-    $response  = new TelegramResponse($responseDate);
-    $handler           = new TelegramHandler();
+    $response = new TelegramResponse($responseDate);
+    $handler = new TelegramHandler();
 
     # Ignore banned users
     $user = DB::queryOne("select active from users where id = " . $response->id);
-    if ($user->active === 0)
-    {
+    if ($user->active === 0) {
         return $httpResponse;
     }
 
@@ -99,81 +90,52 @@ $app->post('/webhook', function (Request $request, Response $httpResponse)
     Logger::logTelegramResponse($response);
 
     # Handling
-    if ($response->isValid)
-    {
+    if ($response->isValid) {
         $user = DB::queryOne("select * from users where id = $response->id");
 
-        if ($response->isCommand)
-        {
+        if ($response->isCommand) {
             # Show rate
-            if ($response->text == TelegramResponse::COMMAND_SHOW_RATE)
-            {
+            if ($response->text == TelegramResponse::COMMAND_SHOW_RATE) {
                 $handler->sendCurrentRate($user->id);
                 return $httpResponse;
             }
 
-            if ($response->isCallback)
-            {
+            if ($response->isCallback) {
                 $callbackId = $responseDate['callback_query']['id'] ?? null;
 
                 if (is_null($callbackId)) return $httpResponse;
 
                 # Sending users count to Admin
-                if ($response->text == TelegramResponse::COMMAND_USERS && $user->is_admin == 1)
-                {
+                if ($response->text == TelegramResponse::COMMAND_USERS && $user->is_admin == 1) {
                     $handler->sendUsers($callbackId);
-                }
-                # Setting up schedule answer from User
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY)
-                {
+                } # Setting up schedule answer from User
+                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY) {
                     $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every day');
-                }
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR)
-                {
+                } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR) {
                     $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every hour');
-                }
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE)
-                {
+                } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE) {
                     $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
                 }
-            }
-            else
-            {
+            } else {
                 # Start command
-                if ($response->text == TelegramResponse::COMMAND_START)
-                {
+                if ($response->text == TelegramResponse::COMMAND_START) {
                     $handler->sendWelcome($response);
-                }
-                # Setting up schedule
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE)
-                {
+                } # Setting up schedule
+                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE) {
                     $handler->sendScheduleMenu($user->id);
-                }
-                # Setting up alarms
-                else if ($response->text == TelegramResponse::COMMAND_CREATE_ALARM)
-                {
+                } # Setting up alarms
+                else if ($response->text == TelegramResponse::COMMAND_CREATE_ALARM) {
                     $handler->sendAlarmInfo($user->id);
                 }
             }
-        }
-        else
-        {
+        } else {
             # If User send just a message without any command
-
-            if(str_starts_with($response->text, 'alarm'))
-            {
+            if (str_starts_with($response->text, 'alarm')) {
                 $handler->setUserAlarm($user->id, $response->text);
-            }
-            else
-            {
-                if ($user->is_admin == 1)
-                {
-                    $handler->sendAdminMenu($user->id);
-                }
-                else
-                {
-                    $handler->sendCurrentRate($user->id);
-                }
+            } elseif ($user->is_admin == 1) {
+                $handler->sendAdminMenu($user->id);
+            } else {
+                $handler->sendCurrentRate($user->id);
             }
         }
     }
