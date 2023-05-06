@@ -26,14 +26,14 @@ class Handler
 
     public function mail(): void
     {
-        $users = DB::query("SELECT id, is_admin, last_rate from users");
+        $users = DB::query("SELECT id, telegram_id, is_admin, last_rate from users");
         $currentRate = $this->apiAdaptor->getRate();
 
         foreach ($users as $user) {
             $lastRate = $user['last_rate'] ?? 0;
             $text = $this->getRateMessage($currentRate, $lastRate);
 
-            if ($this->telegramAdaptor->sendMessage($user['id'], $text)) {
+            if ($this->telegramAdaptor->sendMessage($user['telegram_id'], $text)) {
                 DB::exec("UPDATE users set last_rate = {$currentRate} where id = " . $user['id']);
             }
         }
@@ -84,7 +84,7 @@ class Handler
     public function sendCurrentRate(int $chatId): bool
     {
         $currentRate = $this->apiAdaptor->getRate();
-        $lastRate = (int)DB::queryOne("select last_rate from users where id = {$chatId}")->last_rate;
+        $lastRate = (int)DB::queryOne("select last_rate from users where telegram_id = {$chatId}")->last_rate;
 
         $this->updateUserRate($chatId, $currentRate);
 
@@ -125,7 +125,7 @@ class Handler
 
     public function sendWelcome(Response $response): bool
     {
-        $raw = DB::query("select id from users where id = " . $response->id);
+        $raw = DB::query("select id from users where telegram_id = " . $response->id);
         if (ArrayHelper::isEmpty($raw)) {
             $userId = $response->id;
             $firstName = $response->userInfo['first_name'] ?? '';
@@ -170,6 +170,6 @@ class Handler
 
     protected function updateUserRate(int $userId, int $rate): void
     {
-        DB::exec("UPDATE users set last_rate = {$rate} where id = {$userId}");
+        DB::exec("UPDATE users set last_rate = {$rate} where telegram_id = {$userId}");
     }
 }

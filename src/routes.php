@@ -81,7 +81,7 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
     $handler = new TelegramHandler();
 
     # Ignore banned users
-    $user = DB::queryOne("select active from users where id = " . $response->id);
+    $user = DB::queryOne("select active from users where telegram_id = " . $response->id);
     if ($user->active === 0) {
         return $httpResponse;
     }
@@ -91,15 +91,17 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
 
     # Handling
     if ($response->isValid) {
-        $user = DB::queryOne("select * from users where id = $response->id");
+        $user = DB::queryOne("select * from users where telegram_id = $response->id");
 
+        # If response - command
         if ($response->isCommand) {
             # Show rate
             if ($response->text == TelegramResponse::COMMAND_SHOW_RATE) {
-                $handler->sendCurrentRate($user->id);
+                $handler->sendCurrentRate($user->telegram_id);
                 return $httpResponse;
             }
 
+            # If response in answer for callback
             if ($response->isCallback) {
                 $callbackId = $responseDate['callback_query']['id'] ?? null;
 
@@ -122,20 +124,20 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
                     $handler->sendWelcome($response);
                 } # Setting up schedule
                 else if ($response->text == TelegramResponse::COMMAND_SCHEDULE) {
-                    $handler->sendScheduleMenu($user->id);
+                    $handler->sendScheduleMenu($user->telegram_id);
                 } # Setting up alarms
                 else if ($response->text == TelegramResponse::COMMAND_CREATE_ALARM) {
-                    $handler->sendAlarmInfo($user->id);
+                    $handler->sendAlarmInfo($user->telegram_id);
                 }
             }
         } else {
             # If User send just a message without any command
             if (str_starts_with($response->text, 'alarm')) {
-                $handler->setUserAlarm($user->id, $response->text);
+                $handler->setUserAlarm($user->telegram_id, $response->text);
             } elseif ($user->is_admin == 1) {
-                $handler->sendAdminMenu($user->id);
+                $handler->sendAdminMenu($user->telegram_id);
             } else {
-                $handler->sendCurrentRate($user->id);
+                $handler->sendCurrentRate($user->telegram_id);
             }
         }
     }
