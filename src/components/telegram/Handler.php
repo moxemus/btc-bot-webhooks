@@ -108,12 +108,27 @@ class Handler
 
     public function sendCurrentRate(int $chatId): bool
     {
-        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
-        $lastRate = (int)DB::queryOne("select last_rate from users where telegram_id = {$chatId}")->last_rate;
+        $data = array_map(
+            fn($currency) => [
+                'currency' => $currency,
+                'value' => $this->apiAdaptor->getRate($currency)
+            ],
+            $this->getAvailableCrypto()
+        );
 
-        $this->updateUserRate($chatId, $currentRate);
+        $message = '';
 
-        return $this->sendMessage($chatId, $this->getRateMessage($currentRate, $lastRate));
+        foreach ($data as $item) {
+            $currentRate = $item['value'];
+            $currency = $item['currency'];
+            $lastRate = $this->getLastUserRate($chatId, $currency);
+
+            $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . "\n";
+
+            $this->updateUserRate($chatId, $currentRate, $currency);
+        }
+
+        return $this->telegramAdaptor->sendMessage($chatId, $message);
     }
 
     public function sendAdminMenu(int $chatId): bool
