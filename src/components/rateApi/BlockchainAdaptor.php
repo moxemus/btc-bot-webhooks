@@ -6,7 +6,11 @@ class BlockchainAdaptor extends BaseAdaptor
 {
     protected string $url = 'https://blockchain.info/ticker';
 
-    function getRate(): int
+    /**
+     * @param string $name
+     * @return int
+     */
+    function getRate(string $name): int
     {
         $info = file_get_contents($this->url);
         $info = json_decode($info, true);

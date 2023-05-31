@@ -3,8 +3,9 @@
 namespace src\components\telegram;
 
 use src\components\rateApi\BaseAdaptor;
-use src\components\rateApi\BlockchainAdaptor;
+use src\components\rateApi\MessariAdaptor;
 use moxemus\array\Helper as ArrayHelper;
+use src\components\rateApi\BaseAdaptor as RateAdaptor;
 use src\config\DB;
 
 class Handler
@@ -19,7 +20,7 @@ class Handler
 
     public function __construct(?BaseAdaptor $apiAdaptor = null)
     {
-        $this->apiAdaptor = $apiAdaptor ?? new BlockchainAdaptor();
+        $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
         $this->telegramAdaptor = new Adaptor();
         $this->db = new DB();
     }
@@ -27,7 +28,7 @@ class Handler
     public function mail(): void
     {
         $users = DB::query("SELECT telegram_id, is_admin, last_rate from users");
-        $currentRate = $this->apiAdaptor->getRate();
+        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
 
         foreach ($users as $user) {
             $lastRate = $user['last_rate'] ?? 0;

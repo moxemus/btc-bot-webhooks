@@ -80,9 +80,10 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
     $response = new TelegramResponse($responseDate);
     $handler = new TelegramHandler();
 
-    # Ignore banned users
     $user = DB::queryOne("select active from users where telegram_id = " . $response->id);
-    if ($user->active === 0) {
+
+    # Ignore banned users
+    if (!$user->active) {
         return $httpResponse;
     }
 
@@ -112,9 +113,9 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
                     $handler->sendUsers($callbackId);
                 } # Setting up schedule answer from User
                 else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY) {
-                    $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every day');
+                    $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every day');
                 } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR) {
-                    $handler->sendAnswerCallback($callbackId, 'Now you will get BTC rate every hour');
+                    $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every hour');
                 } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE) {
                     $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
                 }
@@ -134,7 +135,7 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
             # If User send just a message without any command
             if (str_starts_with($response->text, 'alarm')) {
                 $handler->setUserAlarm($user->telegram_id, $response->text);
-            } elseif ($user->is_admin == 1) {
+            } elseif ($user->is_admin) {
                 $handler->sendAdminMenu($user->telegram_id);
             } else {
                 $handler->sendCurrentRate($user->telegram_id);
