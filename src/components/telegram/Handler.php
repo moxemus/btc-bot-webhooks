@@ -3,9 +3,9 @@
 namespace src\components\telegram;
 
 use src\components\rateApi\BaseAdaptor;
+use src\components\rateApi\BaseAdaptor as RateAdaptor;
 use src\components\rateApi\MessariAdaptor;
 use moxemus\array\Helper as ArrayHelper;
-use src\components\rateApi\BaseAdaptor as RateAdaptor;
 use src\config\DB;
 
 class Handler
@@ -23,6 +23,15 @@ class Handler
         $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
         $this->telegramAdaptor = new Adaptor();
         $this->db = new DB();
+    }
+
+    protected function getAvailableCrypto(): array
+    {
+        return [
+            RateAdaptor::BTC,
+            RateAdaptor::ETH,
+            RateAdaptor::DOGE
+        ];
     }
 
     public function mail(): void
@@ -43,7 +52,7 @@ class Handler
     public function notify(): void
     {
         $userAlarms = DB::query("select * from user_alarms");
-        $currentRate = $this->apiAdaptor->getRate();
+        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
 
         foreach ($userAlarms as $alarm) {
             $userRate = $alarm['rate'];
@@ -84,7 +93,7 @@ class Handler
 
     public function sendCurrentRate(int $chatId): bool
     {
-        $currentRate = $this->apiAdaptor->getRate();
+        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
         $lastRate = (int)DB::queryOne("select last_rate from users where telegram_id = {$chatId}")->last_rate;
 
         $this->updateUserRate($chatId, $currentRate);
