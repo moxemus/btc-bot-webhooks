@@ -55,7 +55,7 @@ class Handler
                 $currency = $item['currency'];
                 $lastRate = $this->getLastUserRate($chatId, $currency);
 
-                $message .= $this->getRateMessage($currentRate, $lastRate) . "\n";
+                $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . "\n";
 
                 $this->updateUserRate($chatId, $currentRate, $currency);
             }
