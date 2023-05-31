@@ -189,7 +189,7 @@ class Handler
         $currencies = $this->getAvailableCrypto();
         foreach ($currencies as $currency) {
             DB::exec(
-                "insert into user_rates (user_id, currency, vaue) values " .
+                "insert into user_rates (user_id, currency, value) values " .
                 "($chatId, '$currency', 0)"
             );
         }
@@ -199,7 +199,7 @@ class Handler
     {
         $raw = DB::queryOne("select value from user_rates where user_id = $chatId and currency = '$currency'");
 
-        return $raw->value;
+        return (int)($raw->value ?? 0);
     }
 
     public function sendAlarmInfo(int $chatId): bool
@@ -229,6 +229,6 @@ class Handler
 
     protected function updateUserRate(int $chatId, int $rate, string $currency): void
     {
-        DB::exec("UPDATE user_rates set value = {$rate} where user_id = {$chatId} and currency = {$currency}");
+        DB::exec("UPDATE user_rates set value = {$rate} where user_id = {$chatId} and currency = '{$currency}'");
     }
 }
