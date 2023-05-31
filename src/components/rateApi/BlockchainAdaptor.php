@@ -8,15 +8,15 @@ class BlockchainAdaptor extends BaseAdaptor
 
     /**
      * @param string $name
-     * @return int
+     * @return double
      */
-    function getRate(string $name): int
+    function getRate(string $name): float
     {
         $info = file_get_contents($this->url);
         $info = json_decode($info, true);
 
         $rate = $info['USD']['last'] ?? 0;
 
-        return (int)$rate;
+        return (float)$rate;
     }
 }

@@ -8,9 +8,9 @@ class MessariAdaptor extends BaseAdaptor
 
     /**
      * @param string $name
-     * @return int
+     * @return double
      */
-    function getRate(string $name): int
+    function getRate(string $name): float
     {
         $url = str_replace('{name}', $name, $this->url);
         $info = file_get_contents($url);
@@ -18,6 +18,10 @@ class MessariAdaptor extends BaseAdaptor
 
         $rate = $info['data']['market_data']['price_usd'] ?? 0;
 
-        return (int)$rate;
+        return ($rate < 0)
+            ? (float)number_format($rate, 2, '.', '')
+            : (float)number_format($rate, 0, '.', '');
+
+        return $rate;
     }
 }

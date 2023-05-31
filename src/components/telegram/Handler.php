@@ -55,7 +55,7 @@ class Handler
                 $currency = $item['currency'];
                 $lastRate = $this->getLastUserRate($chatId, $currency);
 
-                $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . "\n";
+                $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
 
                 $this->updateUserRate($chatId, $currentRate, $currency);
             }
@@ -195,11 +195,11 @@ class Handler
         }
     }
 
-    protected function getLastUserRate(int $chatId, string $currency): int
+    protected function getLastUserRate(int $chatId, string $currency): float
     {
         $raw = DB::queryOne("select value from user_rates where user_id = $chatId and currency = '$currency'");
 
-        return (int)($raw->value ?? 0);
+        return (float)($raw->value ?? 0);
     }
 
     public function sendAlarmInfo(int $chatId): bool
@@ -221,13 +221,13 @@ class Handler
         return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
     }
 
-    protected function getRateMessage($currentRate, $lastRate): string
+    protected function getRateMessage(float $currentRate, float $lastRate): string
     {
         $smile = ($currentRate >= $lastRate) ? self::SMILE_GREEN : self::SMILE_RED;
         return $currentRate . $smile;
     }
 
-    protected function updateUserRate(int $chatId, int $rate, string $currency): void
+    protected function updateUserRate(int $chatId, float $rate, string $currency): void
     {
         DB::exec("UPDATE user_rates set value = {$rate} where user_id = {$chatId} and currency = '{$currency}'");
     }
