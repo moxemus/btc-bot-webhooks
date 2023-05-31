@@ -229,6 +229,7 @@ class Handler
 
     protected function updateUserRate(int $chatId, float $rate, string $currency): void
     {
-        DB::exec("UPDATE user_rates set value = {$rate} where user_id = {$chatId} and currency = '{$currency}'");
+        DB::exec("UPDATE user_rates set value = " . number_format($rate, 2, '.', '')
+            ."  where user_id = {$chatId} and currency = '{$currency}'");
     }
 }
