@@ -14,6 +14,10 @@ class Handler
     const SMILE_RED = "\xF0\x9F\x94\xBB";
     const SMILE_EXCLAMATION = "\xE2\x9D\x97";
 
+    const SMILE_DOG = "\xF0\x9F\x90\xB6";
+    const SMILE_DIAMOND = "\xF0\x9F\x92\x8E";
+    const SMILE_LETTER_B = "\xF0\x9F\x85\xB1";
+
     protected Adaptor $telegramAdaptor;
     protected BaseAdaptor $apiAdaptor;
     protected DB $db;
@@ -55,13 +59,22 @@ class Handler
                 $currency = $item['currency'];
                 $lastRate = $this->getLastUserRate($chatId, $currency);
 
-                $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
+                $message .= $this->getCurrencyName($currency) . ': ' . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
 
                 $this->updateUserRate($chatId, $currentRate, $currency);
             }
 
             $this->telegramAdaptor->sendMessage($chatId, $message);
         }
+    }
+
+    protected function getCurrencyName(string $name): string
+    {
+        return match ($name) {
+            RateAdaptor::BTC => self::SMILE_LETTER_B,
+            RateAdaptor::ETH => self::SMILE_DIAMOND,
+            RateAdaptor::DOGE => self::SMILE_DOG,
+        };
     }
 
     public function notify(): void
@@ -123,7 +136,7 @@ class Handler
             $currency = $item['currency'];
             $lastRate = $this->getLastUserRate($chatId, $currency);
 
-            $message .= "$currency: " . $this->getRateMessage($currentRate, $lastRate) . "\n";
+            $message .= $this->getCurrencyName($currency) . ': ' . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
 
             $this->updateUserRate($chatId, $currentRate, $currency);
         }
