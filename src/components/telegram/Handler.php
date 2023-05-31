@@ -37,15 +37,30 @@ class Handler
     public function mail(): void
     {
         $users = DB::query("SELECT telegram_id, is_admin, last_rate from users");
-        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
+
+        $data = array_map(
+            fn($currency) => [
+                'currency' => $currency,
+                'value' => $this->apiAdaptor->getRate($currency)
+            ],
+            $this->getAvailableCrypto()
+        );
 
         foreach ($users as $user) {
-            $lastRate = $user['last_rate'] ?? 0;
-            $text = $this->getRateMessage($currentRate, $lastRate);
+            $message = '';
+            $chatId = $user['telegram_id'];
 
-            $this->telegramAdaptor->sendMessage($user['telegram_id'], $text);
+            foreach ($data as $item) {
+                $currentRate = $item['value'];
+                $currency = $item['currency'];
+                $lastRate = $this->getLastUserRate($chatId, $currency);
 
-            $this->updateUserRate($user['telegram_id'], $currentRate);
+                $message .= $this->getRateMessage($currentRate, $lastRate) . "\n";
+
+                $this->updateUserRate($chatId, $currentRate, $currency);
+            }
+
+            $this->telegramAdaptor->sendMessage($chatId, $message);
         }
     }
 
@@ -137,20 +152,39 @@ class Handler
     {
         $raw = DB::query("select id from users where telegram_id = " . $response->id);
         if (ArrayHelper::isEmpty($raw)) {
-            $userId = $response->id;
-            $firstName = $response->userInfo['first_name'] ?? '';
-            $lastName = $response->userInfo['last_name'] ?? '';
-            $language = $response->userInfo['language_code'] ?? '';
-            $username = $response->userInfo['username'] ?? '';
-
-            DB::exec(
-                "insert into users (id, first_name, last_name, username, language_code) values " .
-                "($userId, '$firstName', '$lastName', '$username', '$language')"
-            );
+            $this->createUser($response->id, $response->userInfo);
         }
 
         $this->sendMessage($response->id, 'Welcome to BTC rate bot!');
         return $this->sendCurrentRate($response->id);
+    }
+
+    protected function createUser(int $chatId, array $params): void
+    {
+        $firstName = $params['first_name'] ?? '';
+        $lastName = $params['last_name'] ?? '';
+        $language = $params['language_code'] ?? '';
+        $username = $params['username'] ?? '';
+
+        DB::exec(
+            "insert into users (telegram_id, first_name, last_name, username, language_code) values " .
+            "($chatId, '$firstName', '$lastName', '$username', '$language')"
+        );
+
+        $currencies = $this->getAvailableCrypto();
+        foreach ($currencies as $currency) {
+            DB::exec(
+                "insert into user_rates (user_id, currency, vaue) values " .
+                "($chatId, '$currency', 0)"
+            );
+        }
+    }
+
+    protected function getLastUserRate(int $chatId, string $currency): int
+    {
+        $raw = DB::queryOne("select value from user_rates where user_id = $chatId and currency = '$currency'");
+
+        return $raw->value;
     }
 
     public function sendAlarmInfo(int $chatId): bool
@@ -178,8 +212,8 @@ class Handler
         return $currentRate . $smile;
     }
 
-    protected function updateUserRate(int $chatId, int $rate): void
+    protected function updateUserRate(int $chatId, int $rate, string $currency): void
     {
-        DB::exec("UPDATE users set last_rate = {$rate} where telegram_id = {$chatId}");
+        DB::exec("UPDATE user_rates set value = {$rate} where user_id = {$chatId} and currency = {$currency}");
     }
 }
