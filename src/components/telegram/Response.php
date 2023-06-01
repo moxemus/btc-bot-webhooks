@@ -39,7 +39,7 @@ final class Response
             {
                 $this->id        = (int)$this->data['message']['from']['id'];
                 $this->text      = $this->data['message']['text'] ?? '';
-                $this->isCommand = $this->text[0] == '/';
+                $this->isCommand = str_starts_with($this->text, '/');
             }
 
             $this->userInfo = $this->data['message']['from'] ?? [];

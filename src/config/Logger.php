@@ -17,7 +17,7 @@ final class Logger
 
     private static function init(): void
     {
-        if(!self::$monoLogger)
+        if (!self::$monoLogger)
         {
             self::$monoLogger = new MonoLogger('main');
             self::$monoLogger->pushHandler(new StreamHandler(__DIR__ . '/runtime'));
