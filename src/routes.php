@@ -82,72 +82,62 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
     $user = DB::queryOne("select active from users where telegram_id = $response->id");
 
     # Ignore banned users
-    if (!$user->active) {
+    if (!$user->active || !$response->isValid) {
         return $httpResponse;
     }
 
+    $user = DB::queryOne("select * from users where telegram_id = $response->id");
+
     # Handling
-    if ($response->isValid) {
-        $user = DB::queryOne("select * from users where telegram_id = $response->id");
+    if ($response->isCommand) {
+        if ($response->text == TelegramResponse::COMMAND_SHOW_RATE) {
+            $handler->sendCurrentRate($user->telegram_id);
+            return $httpResponse;
+        }
 
-        # If response - command
-        if ($response->isCommand) {
-            # Show rate
-            if ($response->text == TelegramResponse::COMMAND_SHOW_RATE) {
-                $handler->sendCurrentRate($user->telegram_id);
-                return $httpResponse;
-            }
-
-            # If response in answer for callback
-            if ($response->isCallback) {
-
-                $callbackId = $responseDate['callback_query']['id'] ?? null;
-                if (is_null($callbackId)) {
-                    return $httpResponse;
-                }
-
-                switch ($response->text) {
-                    case TelegramResponse::COMMAND_USERS:
-                        $user->is_admin == 1 && $handler->sendUsers($callbackId);
-                        break;
-                    case TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY:
-                        $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every day');
-                        break;
-                    case TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR:
-                        $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every hour');
-                        break;
-                    case TelegramResponse::COMMAND_SCHEDULE_DISABLE:
-                        $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
-                        break;
-                    default:
-                        break;
-                }
-
-            } else {
-
-                switch ($response->text) {
-                    case TelegramResponse::COMMAND_START:
-                        $handler->sendWelcome($response);
-                        break;
-                    case TelegramResponse::COMMAND_SCHEDULE:
-                        $handler->sendScheduleMenu($user->telegram_id);
-                        break;
-                    case TelegramResponse::COMMAND_CREATE_ALARM:
-                        $handler->sendAlarmInfo($user->telegram_id);
-                        break;
-                    default:
-                        break;
-                }
+        if ($response->isCallback) {
+            switch ($response->text) {
+                case TelegramResponse::COMMAND_USERS:
+                    $user->is_admin == 1 && $handler->sendUsers($response->callbackId);
+                    break;
+                case TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY:
+                    $handler->sendAnswerCallback($response->callbackId, 'Now you will get crypto rate every day');
+                    break;
+                case TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR:
+                    $handler->sendAnswerCallback($response->callbackId, 'Now you will get crypto rate every hour');
+                    break;
+                case TelegramResponse::COMMAND_SCHEDULE_DISABLE:
+                    $handler->sendAnswerCallback($response->callbackId, 'Schedule disabled');
+                    break;
+                default:
+                    break;
             }
         } else {
-            # If User send just a message without any command
-            if (str_starts_with($response->text, 'alarm')) {
-                $handler->setUserAlarm($user->telegram_id, $response->text);
-            } elseif ($user->is_admin) {
-                $handler->sendAdminMenu($user->telegram_id);
-            } else {
-                $handler->sendCurrentRate($user->telegram_id);
+            switch ($response->text) {
+                case TelegramResponse::COMMAND_START:
+                    $handler->sendWelcome($response);
+                    break;
+                case TelegramResponse::COMMAND_SCHEDULE:
+                    $handler->sendScheduleMenu($user->telegram_id);
+                    break;
+                case TelegramResponse::COMMAND_CREATE_ALARM:
+                    $handler->sendAlarmInfo($user->telegram_id);
+                    break;
+                default:
+                    break;
             }
+        }
+    } else {
+        switch (true) {
+            case str_starts_with($response->text, 'alarm'):
+                $handler->setUserAlarm($user->telegram_id, $response->text);
+                break;
+            case $user->is_admin:
+                $handler->sendAdminMenu($user->telegram_id);
+                break;
+            default:
+                $handler->sendCurrentRate($user->telegram_id);
+                break;
         }
     }
 

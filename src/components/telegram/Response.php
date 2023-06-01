@@ -20,6 +20,7 @@ final class Response
     public bool $isCommand = false;
     public bool $isCallback = false;
     public bool $isValid = false;
+    public ?int $callbackId = null;
     public array $userInfo = [];
 
     /**
@@ -35,6 +36,7 @@ final class Response
                 $this->id = (int)$this->data['callback_query']['message']['chat']['id'];
                 $this->text = $this->data['callback_query']['data'];
                 $this->isCommand = true;
+                $this->callbackId = $this->data['callback_query']['id'] ?? null;
             } else {
                 $this->id = (int)$this->data['message']['from']['id'];
                 $this->text = $this->data['message']['text'] ?? '';
@@ -47,6 +49,8 @@ final class Response
 
         }
 
-        $this->isValid = (($this->id > 0) && (!empty($this->id)));
+        $this->isValid = (
+            ($this->id > 0) && (!empty($this->id)) && ($this->isCallback == (bool)$this->callbackId)
+        );
     }
 }
