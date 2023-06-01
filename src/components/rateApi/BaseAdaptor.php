@@ -9,5 +9,5 @@ abstract class BaseAdaptor
     const DOGE = 'doge';
 
     protected string $url;
-    abstract function getRate(string $name): float;
+    abstract public function getRate(string $name): float;
 }

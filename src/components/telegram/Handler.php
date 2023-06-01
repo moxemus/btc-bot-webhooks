@@ -59,7 +59,9 @@ class Handler
                 $currency = $item['currency'];
                 $lastRate = $this->getLastUserRate($chatId, $currency);
 
-                $message .= $this->getCurrencyName($currency) . ': ' . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
+                $message .= $this->getCurrencyName($currency) .
+                    ': ' . $this->getRateMessage($currentRate, $lastRate) .
+                    PHP_EOL;
 
                 $this->updateUserRate($chatId, $currentRate, $currency);
             }
@@ -84,7 +86,7 @@ class Handler
 
         foreach ($userAlarms as $alarm) {
             $userRate = $alarm['rate'];
-            $isBigger = !!$alarm['is_bigger'];
+            $isBigger = (bool)$alarm['is_bigger'];
 
             if ($userRate > $currentRate && $isBigger ||
                 $userRate < $currentRate && !$isBigger) {
@@ -136,7 +138,9 @@ class Handler
             $currency = $item['currency'];
             $lastRate = $this->getLastUserRate($chatId, $currency);
 
-            $message .= $this->getCurrencyName($currency) . ': ' . $this->getRateMessage($currentRate, $lastRate) . PHP_EOL;
+            $message .= $this->getCurrencyName($currency) .
+                ': ' . $this->getRateMessage($currentRate, $lastRate) .
+                PHP_EOL;
 
             $this->updateUserRate($chatId, $currentRate, $currency);
         }
@@ -148,7 +152,7 @@ class Handler
     {
         $markupParams = [
             "Show users" => Response::COMMAND_USERS,
-            "Show rate" => Response::COMMAND_SHOW_RATE,
+            "Show rate" => Response::COMMAND_SHOW_RATE
         ];
 
         return $this->sendMessage($chatId, 'Hello admin!', $markupParams);

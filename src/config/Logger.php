@@ -17,8 +17,7 @@ final class Logger
 
     private static function init(): void
     {
-        if (!self::$monoLogger)
-        {
+        if (!self::$monoLogger) {
             self::$monoLogger = new MonoLogger('main');
             self::$monoLogger->pushHandler(new StreamHandler(__DIR__ . '/runtime'));
         }
@@ -28,8 +27,7 @@ final class Logger
     {
         self::init();
 
-        if (is_array($data))
-        {
+        if (is_array($data)) {
            $data = json_encode($data);
         }
 

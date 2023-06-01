@@ -10,7 +10,7 @@ class BlockchainAdaptor extends BaseAdaptor
      * @param string $name
      * @return double
      */
-    function getRate(string $name): float
+    public function getRate(string $name): float
     {
         $info = file_get_contents($this->url);
         $info = json_decode($info, true);

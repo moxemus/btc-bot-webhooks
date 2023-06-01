@@ -119,6 +119,8 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
                     case TelegramResponse::COMMAND_SCHEDULE_DISABLE:
                         $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
                         break;
+                    default:
+                        break;
                 }
 
             } else {
@@ -132,6 +134,8 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
                         break;
                     case TelegramResponse::COMMAND_CREATE_ALARM:
                         $handler->sendAlarmInfo($user->telegram_id);
+                        break;
+                    default:
                         break;
                 }
             }
