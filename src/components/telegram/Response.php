@@ -22,6 +22,9 @@ final class Response
     public bool $isValid = false;
     public array $userInfo = [];
 
+    /**
+     * @param array $data
+     */
     public function __construct(array $data)
     {
         $this->data = $data;

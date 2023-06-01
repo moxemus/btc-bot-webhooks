@@ -8,7 +8,8 @@ class MessariAdaptor extends BaseAdaptor
 
     /**
      * @param string $name
-     * @return double
+     *
+     * @return float
      */
     function getRate(string $name): float
     {

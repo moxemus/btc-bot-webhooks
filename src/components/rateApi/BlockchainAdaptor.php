@@ -8,7 +8,8 @@ class BlockchainAdaptor extends BaseAdaptor
 
     /**
      * @param string $name
-     * @return double
+     *
+     * @return float
      */
     public function getRate(string $name): float
     {

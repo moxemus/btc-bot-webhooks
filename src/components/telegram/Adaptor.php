@@ -21,7 +21,13 @@ class Adaptor
     const PARAM_INLINE_KEYBOARD = 'inline_keyboard';
     const PARAM_CALLBACK_DATA = 'callback_data';
 
-
+    /**
+     * @param int $chatId
+     * @param string $text
+     * @param array $markupParams
+     *
+     * @return bool
+     */
     public function sendMessage(int $chatId, string $text, array $markupParams = []): bool
     {
         $params = [
@@ -43,6 +49,12 @@ class Adaptor
         return $this->send(self::ACTION_SEND_MESSAGE, $params);
     }
 
+    /**
+     * @param int $callbackId
+     * @param string $text
+     *
+     * @return bool
+     */
     public function sendAnswerCallback(int $callbackId, string $text): bool
     {
         $params = [
@@ -54,6 +66,12 @@ class Adaptor
         return $this->send(self::ACTION_ANSWER_CALLBACK, $params);
     }
 
+    /**
+     * @param string $action
+     * @param array $params
+     *
+     * @return bool
+     */
     public function send(string $action, array $params): bool
     {
         try {

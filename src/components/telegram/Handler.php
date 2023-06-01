@@ -22,6 +22,9 @@ class Handler
     protected BaseAdaptor $apiAdaptor;
     protected DB $db;
 
+    /**
+     * @param RateAdaptor|null $apiAdaptor
+     */
     public function __construct(?BaseAdaptor $apiAdaptor = null)
     {
         $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
@@ -29,6 +32,9 @@ class Handler
         $this->db = new DB();
     }
 
+    /**
+     * @return string[]
+     */
     protected function getAvailableCrypto(): array
     {
         return [
@@ -38,6 +44,9 @@ class Handler
         ];
     }
 
+    /**
+     * @return void
+     */
     public function mail(): void
     {
         $users = DB::query("SELECT telegram_id, is_admin, last_rate from users");
@@ -70,6 +79,11 @@ class Handler
         }
     }
 
+    /**
+     * @param string $name
+     *
+     * @return string
+     */
     protected function getCurrencyName(string $name): string
     {
         return match ($name) {
@@ -79,6 +93,9 @@ class Handler
         };
     }
 
+    /**
+     * @return void
+     */
     public function notify(): void
     {
         $userAlarms = DB::query("select * from user_alarms");
@@ -101,6 +118,12 @@ class Handler
         }
     }
 
+    /**
+     * @param int $userId
+     * @param string $text
+     *
+     * @return void
+     */
     public function setUserAlarm(int $userId, string $text): void
     {
         $matches = [];
@@ -121,6 +144,11 @@ class Handler
         }
     }
 
+    /**
+     * @param int $chatId
+     *
+     * @return bool
+     */
     public function sendCurrentRate(int $chatId): bool
     {
         $data = array_map(
@@ -148,6 +176,11 @@ class Handler
         return $this->telegramAdaptor->sendMessage($chatId, $message);
     }
 
+    /**
+     * @param int $chatId
+     *
+     * @return bool
+     */
     public function sendAdminMenu(int $chatId): bool
     {
         $markupParams = [
@@ -158,6 +191,11 @@ class Handler
         return $this->sendMessage($chatId, 'Hello admin!', $markupParams);
     }
 
+    /**
+     * @param int|null $chatId
+     *
+     * @return bool
+     */
     public function sendUsers(?int $chatId): bool
     {
         if (is_null($chatId)) {
@@ -169,6 +207,11 @@ class Handler
         return $this->sendAnswerCallback($chatId, $raw->cc);
     }
 
+    /**
+     * @param int $chatId
+     *
+     * @return bool
+     */
     public function sendScheduleMenu(int $chatId): bool
     {
         $markupParams = [
@@ -180,6 +223,11 @@ class Handler
         return $this->sendMessage($chatId, 'Set up your notification schedule', $markupParams);
     }
 
+    /**
+     * @param Response $response
+     *
+     * @return bool
+     */
     public function sendWelcome(Response $response): bool
     {
         $raw = DB::query("select id from users where telegram_id = " . $response->id);
@@ -191,6 +239,12 @@ class Handler
         return $this->sendCurrentRate($response->id);
     }
 
+    /**
+     * @param int $chatId
+     * @param array $params
+     *
+     * @return void
+     */
     protected function createUser(int $chatId, array $params): void
     {
         $firstName = $params['first_name'] ?? '';
@@ -212,6 +266,12 @@ class Handler
         }
     }
 
+    /**
+     * @param int $chatId
+     * @param string $currency
+     *
+     * @return float
+     */
     protected function getLastUserRate(int $chatId, string $currency): float
     {
         $raw = DB::queryOne("select value from user_rates where user_id = $chatId and currency = '$currency'");
@@ -219,6 +279,11 @@ class Handler
         return (float)($raw->value ?? 0);
     }
 
+    /**
+     * @param int $chatId
+     *
+     * @return bool
+     */
     public function sendAlarmInfo(int $chatId): bool
     {
         return $this->sendMessage(
@@ -228,25 +293,51 @@ class Handler
         );
     }
 
+    /**
+     * @param int $callbackId
+     * @param string $text
+     *
+     * @return bool
+     */
     public function sendAnswerCallback(int $callbackId, string $text): bool
     {
         return $this->telegramAdaptor->sendAnswerCallback($callbackId, $text);
     }
 
+    /**
+     * @param int $chatId
+     * @param string $text
+     * @param array $markupParams
+     *
+     * @return bool
+     */
     protected function sendMessage(int $chatId, string $text, array $markupParams = []): bool
     {
         return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
     }
 
+    /**
+     * @param float $currentRate
+     * @param float $lastRate
+     *
+     * @return string
+     */
     protected function getRateMessage(float $currentRate, float $lastRate): string
     {
         $smile = ($currentRate >= $lastRate) ? self::SMILE_GREEN : self::SMILE_RED;
         return $currentRate . $smile;
     }
 
+    /**
+     * @param int $chatId
+     * @param float $rate
+     * @param string $currency
+     *
+     * @return void
+     */
     protected function updateUserRate(int $chatId, float $rate, string $currency): void
     {
         DB::exec("UPDATE user_rates set value = " . number_format($rate, 3, '.', '')
-            ."  where user_id = {$chatId} and currency = '{$currency}'");
+            . "  where user_id = {$chatId} and currency = '{$currency}'");
     }
 }

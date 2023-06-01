@@ -10,6 +10,9 @@ class Handler
     const TYPE_EVERY_HOUR = 1;
     const TYPE_EVERY_DAY  = 2;
 
+    /**
+     * @return array
+     */
     public function getUsersToNotify(): array
     {
         $users = DB::query(" select user_id from user_schedule where type = " . self::TYPE_EVERY_DAY .
