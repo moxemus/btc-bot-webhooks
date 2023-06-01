@@ -7,7 +7,8 @@
     "ext-pdo": "*",
     "ext-curl": "*",
     "monolog/monolog": "^3.2",
-    "moxemus/array-helper": "^1.1"
+    "moxemus/array-helper": "^1.1",
+    "ext-bcmath": "*"
   },
   "autoload": {
     "psr-4": {

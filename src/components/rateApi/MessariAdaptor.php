@@ -18,10 +18,7 @@ class MessariAdaptor extends BaseAdaptor
 
         $rate = $info['data']['market_data']['price_usd'] ?? 0;
 
-        return ($rate < 1)
-            ? (float)number_format($rate, 3, '.', '')
-            : (float)number_format($rate, 0, '.', '');
-
-        return $rate;
+        $scale = ($rate < 1) ? 3 : 0;
+        return (float)bcdiv($rate, 1, $scale);
     }
 }
