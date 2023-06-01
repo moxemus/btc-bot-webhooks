@@ -8,7 +8,6 @@ use Slim\Factory\AppFactory;
 use src\components\telegram\Handler as TelegramHandler;
 use src\components\telegram\Response as TelegramResponse;
 use src\config\DB;
-use src\config\Logger;
 
 $app = AppFactory::create();
 
@@ -80,15 +79,12 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
     $response = new TelegramResponse($responseDate);
     $handler = new TelegramHandler();
 
-    $user = DB::queryOne("select active from users where telegram_id = " . $response->id);
+    $user = DB::queryOne("select active from users where telegram_id = $response->id");
 
     # Ignore banned users
     if (!$user->active) {
         return $httpResponse;
     }
-
-    Logger::logToDB($json, Logger::TELEGRAM_WEBHOOK_REQUEST);
-    Logger::logTelegramResponse($response);
 
     # Handling
     if ($response->isValid) {
@@ -104,31 +100,39 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
 
             # If response in answer for callback
             if ($response->isCallback) {
+
                 $callbackId = $responseDate['callback_query']['id'] ?? null;
-
-                if (is_null($callbackId)) return $httpResponse;
-
-                # Sending users count to Admin
-                if ($response->text == TelegramResponse::COMMAND_USERS && $user->is_admin == 1) {
-                    $handler->sendUsers($callbackId);
-                } # Setting up schedule answer from User
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY) {
-                    $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every day');
-                } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR) {
-                    $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every hour');
-                } else if ($response->text == TelegramResponse::COMMAND_SCHEDULE_DISABLE) {
-                    $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
+                if (is_null($callbackId)) {
+                    return $httpResponse;
                 }
+
+                switch ($response->text) {
+                    case TelegramResponse::COMMAND_USERS:
+                        $user->is_admin == 1 && $handler->sendUsers($callbackId);
+                        break;
+                    case TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY:
+                        $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every day');
+                        break;
+                    case TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR:
+                        $handler->sendAnswerCallback($callbackId, 'Now you will get crypto rate every hour');
+                        break;
+                    case TelegramResponse::COMMAND_SCHEDULE_DISABLE:
+                        $handler->sendAnswerCallback($callbackId, 'Schedule disabled');
+                        break;
+                }
+
             } else {
-                # Start command
-                if ($response->text == TelegramResponse::COMMAND_START) {
-                    $handler->sendWelcome($response);
-                } # Setting up schedule
-                else if ($response->text == TelegramResponse::COMMAND_SCHEDULE) {
-                    $handler->sendScheduleMenu($user->telegram_id);
-                } # Setting up alarms
-                else if ($response->text == TelegramResponse::COMMAND_CREATE_ALARM) {
-                    $handler->sendAlarmInfo($user->telegram_id);
+
+                switch ($response->text) {
+                    case TelegramResponse::COMMAND_START:
+                        $handler->sendWelcome($response);
+                        break;
+                    case TelegramResponse::COMMAND_SCHEDULE:
+                        $handler->sendScheduleMenu($user->telegram_id);
+                        break;
+                    case TelegramResponse::COMMAND_CREATE_ALARM:
+                        $handler->sendAlarmInfo($user->telegram_id);
+                        break;
                 }
             }
         } else {
