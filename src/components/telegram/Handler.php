@@ -14,6 +14,7 @@ class Handler
     const SMILE_RED = "\xF0\x9F\x94\xBB";
     const SMILE_EXCLAMATION = "\xE2\x9D\x97";
 
+    const PURPLE_HEART = "\xF0\x9F\x92\x9C";
     const SMILE_DOG = "\xF0\x9F\x90\xB6";
     const SMILE_DIAMOND = "\xF0\x9F\x92\xA0";
     const SMILE_LETTER_B = "\xF0\x9F\x85\xB1";
@@ -91,6 +92,7 @@ class Handler
             RateAdaptor::BTC => self::SMILE_LETTER_B,
             RateAdaptor::ETH => self::SMILE_DIAMOND,
             RateAdaptor::DOGE => self::SMILE_DOG,
+            RateAdaptor::MATIC => self::PURPLE_HEART
         };
     }
 
