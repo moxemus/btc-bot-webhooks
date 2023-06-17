@@ -7,6 +7,7 @@ abstract class BaseAdaptor
     const BTC = 'btc';
     const ETH = 'eth';
     const DOGE = 'doge';
+    const MATIC = 'matic';
 
     protected string $url;
     abstract public function getRate(string $name): float;

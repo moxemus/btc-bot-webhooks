@@ -40,7 +40,8 @@ class Handler
         return [
             RateAdaptor::BTC,
             RateAdaptor::ETH,
-            RateAdaptor::DOGE
+            RateAdaptor::DOGE,
+            RateAdaptor::MATIC
         ];
     }
 
