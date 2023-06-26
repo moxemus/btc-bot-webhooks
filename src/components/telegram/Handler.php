@@ -305,7 +305,7 @@ class Handler
     {
         return $this->sendMessage(
             $chatId,
-            "You can get notification when BTC rate will be more/lower than your price.\n" .
+            "You can get notification when selected currency rate will be more/lower than your price.\n" .
             "Write your alarm template, for example: alarm less 22000 \n"
         );
     }
