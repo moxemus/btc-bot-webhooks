@@ -138,7 +138,7 @@ class Handler
     public function setUserAlarm(int $userId, string $text): void
     {
         $matches = [];
-        preg_match('/alarm (\w+) (\w+) ^-?(?:\d+|\d*\.\d+)$/', $text, $matches);
+        preg_match('/alarm (\w+) (\w+) (^-?(?:\d+|\d*\.\d+)$)/', $text, $matches);
 
         $currency = $matches[1] ?? null;
         $sign     = $matches[2] ?? null;
