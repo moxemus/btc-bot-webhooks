@@ -154,8 +154,7 @@ class Handler
             DB::exec("delete from user_alarms where user_id = $userId");
             DB::exec(
                 "insert into user_alarms (user_id, rate, is_bigger, currency, active) " .
-                "values ($userId, " . number_format($rate, 3, '.', '') .
-                ", $isBigger, $currency, 1)"
+                "values ($userId, $rate, $isBigger, $currency, 1)"
             );
 
             $this->sendMessage($userId, 'New alarm configured');
