@@ -101,28 +101,30 @@ class Handler
      */
     public function notify(): void
     {
-        $userAlarms = DB::query("select * from user_alarms where active <> 0");
-        $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
+        $userAlarms = DB::query("select user_id, rate, is_bigger, currency from user_alarms where active <> 0");
 
         foreach ($userAlarms as $alarm) {
-            $userRate = $alarm['rate'];
-            $isBigger = (bool)$alarm['is_bigger'];
-            $chatId = $alarm['user_id'];
+            $userRate    = $alarm['rate'];
+            $isBigger    = (bool)$alarm['is_bigger'];
+            $chatId      = $alarm['user_id'];
+            $currency    = $alarm['currency'];
+            $currentRate = $this->apiAdaptor->getRate($currency);
 
             if (
                 ($userRate < $currentRate && $isBigger) ||
                 ($userRate > $currentRate && !$isBigger)
             ) {
                 $text = ($isBigger) ? 'more' : 'less';
-                $message = self::SMILE_EXCLAMATION . "BTC costs is {$text} than {$userRate} now - {$currentRate}" .
+                $message =
+                    self::SMILE_EXCLAMATION .
+                    "{$currency} costs is {$text} than {$userRate} now - {$currentRate}" .
                     self::SMILE_EXCLAMATION;
 
                 $this->telegramAdaptor->sendMessage($chatId, $message);
 
                 DB::exec("update user_alarms set active = 0, sent = now() where user_id = " . $chatId);
 
-                $this->updateUserRate($alarm['user_id'], $currentRate);
-
+                $this->updateUserRate($chatId, $currentRate, $currency);
             }
         }
     }
@@ -136,18 +138,24 @@ class Handler
     public function setUserAlarm(int $userId, string $text): void
     {
         $matches = [];
-        preg_match('/alarm (\w+) (\d+)/', $text, $matches);
+        preg_match('/alarm (\w+) (\w+) (\d+)/', $text, $matches);
 
-        $sign = $matches[1] ?? null;
-        $rate = $matches[2] ?? 0;
+        $currency = $matches[1] ?? null;
+        $sign     = $matches[2] ?? null;
+        $rate     = $matches[3] ?? 0;
 
-        if (!in_array($sign, ['more', 'less']) || $rate <= 0) {
+        if (!in_array($currency, self::getAvailableCrypto())) {
+            $this->sendMessage($userId, 'Please select correct currency');
+        } elseif (!in_array($sign, ['more', 'less']) || $rate <= 0) {
             $this->sendMessage($userId, 'Please give correct info');
         } else {
             $isBigger = intval($sign == 'more');
 
             DB::exec("delete from user_alarms where user_id = $userId");
-            DB::exec("insert into user_alarms (user_id, rate, is_bigger) values ($userId, $rate, $isBigger)");
+            DB::exec(
+                "insert into user_alarms (user_id, rate, is_bigger, currency, active) " .
+                "values ($userId, $rate, $isBigger, $currency, 1)"
+            );
 
             $this->sendMessage($userId, 'New alarm configured');
         }
