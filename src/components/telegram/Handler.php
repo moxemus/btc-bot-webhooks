@@ -264,10 +264,10 @@ class Handler
      */
     protected function createUser(int $chatId, array $params): void
     {
-        $firstName = $params['first_name'] ?? '';
-        $lastName = $params['last_name'] ?? '';
-        $language = $params['language_code'] ?? '';
-        $username = $params['username'] ?? '';
+        $firstName = $params['first_name']    ?? '';
+        $lastName  = $params['last_name']     ?? '';
+        $language  = $params['language_code'] ?? '';
+        $username  = $params['username']      ?? '';
 
         DB::exec(
             "insert into users (telegram_id, first_name, last_name, username, language_code) values " .
