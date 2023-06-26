@@ -108,8 +108,10 @@ class Handler
             $userRate = $alarm['rate'];
             $isBigger = (bool)$alarm['is_bigger'];
 
-            if ($userRate > $currentRate && $isBigger ||
-                $userRate < $currentRate && !$isBigger) {
+            if (
+                ($userRate > $currentRate && $isBigger) ||
+                ($userRate < $currentRate && !$isBigger)
+            ) {
                 $text = ($isBigger) ? 'more' : 'less';
                 $message = self::SMILE_EXCLAMATION . "BTC costs is {$text} than {$userRate} now - {$currentRate}" .
                     self::SMILE_EXCLAMATION;
