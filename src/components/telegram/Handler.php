@@ -101,24 +101,28 @@ class Handler
      */
     public function notify(): void
     {
-        $userAlarms = DB::query("select * from user_alarms");
+        $userAlarms = DB::query("select * from user_alarms where active <> 0");
         $currentRate = $this->apiAdaptor->getRate(RateAdaptor::BTC);
 
         foreach ($userAlarms as $alarm) {
             $userRate = $alarm['rate'];
             $isBigger = (bool)$alarm['is_bigger'];
+            $chatId = $alarm['user_id'];
 
             if (
-                ($userRate > $currentRate && $isBigger) ||
-                ($userRate < $currentRate && !$isBigger)
+                ($userRate < $currentRate && $isBigger) ||
+                ($userRate > $currentRate && !$isBigger)
             ) {
                 $text = ($isBigger) ? 'more' : 'less';
                 $message = self::SMILE_EXCLAMATION . "BTC costs is {$text} than {$userRate} now - {$currentRate}" .
                     self::SMILE_EXCLAMATION;
 
-                $this->telegramAdaptor->sendMessage($alarm['user_id'], $message);
+                $this->telegramAdaptor->sendMessage($chatId, $message);
+
+                DB::exec("update user_alarms set active = 0, sent = now() where user_id = " . $chatId);
 
                 $this->updateUserRate($alarm['user_id'], $currentRate);
+
             }
         }
     }
