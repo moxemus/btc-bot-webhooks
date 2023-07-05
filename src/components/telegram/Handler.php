@@ -18,7 +18,7 @@ class Handler
     const SMILE_DOG = "\xF0\x9F\x90\xB6";
     const SMILE_DIAMOND = "\xF0\x9F\x92\xA0";
     const SMILE_LETTER_B = "\xF0\x9F\x85\xB1";
-    const SMILE_DVD = "xF0\x9F\x93\x80";
+    const SMILE_DVD = "\xF0\x9F\x93\x80";
 
     protected Adaptor $telegramAdaptor;
     protected BaseAdaptor $apiAdaptor;
