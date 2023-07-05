@@ -6,6 +6,7 @@ use Throwable;
 
 class Adaptor
 {
+    # Main Telegram BOT API Url
     const TELEGRAM_URL = 'https://api.telegram.org/bot';
 
     # Requests

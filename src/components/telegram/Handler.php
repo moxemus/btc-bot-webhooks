@@ -2,10 +2,10 @@
 
 namespace src\components\telegram;
 
-use src\components\rateApi\BaseAdaptor;
 use src\components\rateApi\BaseAdaptor as RateAdaptor;
 use src\components\rateApi\MessariAdaptor;
 use moxemus\array\Helper as ArrayHelper;
+use src\components\rateApi\BaseAdaptor;
 use src\config\DB;
 
 class Handler
