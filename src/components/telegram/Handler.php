@@ -18,6 +18,7 @@ class Handler
     const SMILE_DOG = "\xF0\x9F\x90\xB6";
     const SMILE_DIAMOND = "\xF0\x9F\x92\xA0";
     const SMILE_LETTER_B = "\xF0\x9F\x85\xB1";
+    const SMILE_DVD = "xF0\x9F\x93\x80";
 
     protected Adaptor $telegramAdaptor;
     protected BaseAdaptor $apiAdaptor;
@@ -40,10 +41,26 @@ class Handler
     {
         return [
             RateAdaptor::BTC,
-            RateAdaptor::ETH,
+            RateAdaptor::BCH,
             RateAdaptor::DOGE,
             RateAdaptor::MATIC
         ];
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return string
+     */
+    protected function getCurrencyName(string $name): string
+    {
+        return match ($name) {
+            RateAdaptor::BTC => self::SMILE_LETTER_B,
+            RateAdaptor::ETH => self::SMILE_DIAMOND,
+            RateAdaptor::DOGE => self::SMILE_DOG,
+            RateAdaptor::MATIC => self::PURPLE_HEART,
+            RateAdaptor::BCH => self::SMILE_DVD
+        };
     }
 
     /**
@@ -82,21 +99,6 @@ class Handler
     }
 
     /**
-     * @param string $name
-     *
-     * @return string
-     */
-    protected function getCurrencyName(string $name): string
-    {
-        return match ($name) {
-            RateAdaptor::BTC => self::SMILE_LETTER_B,
-            RateAdaptor::ETH => self::SMILE_DIAMOND,
-            RateAdaptor::DOGE => self::SMILE_DOG,
-            RateAdaptor::MATIC => self::PURPLE_HEART
-        };
-    }
-
-    /**
      * @return void
      */
     public function notify(): void
@@ -104,10 +106,10 @@ class Handler
         $userAlarms = DB::query("select user_id, rate, is_bigger, currency from user_alarms where active <> 0");
 
         foreach ($userAlarms as $alarm) {
-            $userRate    = $alarm['rate'];
-            $isBigger    = (bool)$alarm['is_bigger'];
-            $chatId      = $alarm['user_id'];
-            $currency    = $alarm['currency'];
+            $userRate = $alarm['rate'];
+            $isBigger = (bool)$alarm['is_bigger'];
+            $chatId = $alarm['user_id'];
+            $currency = $alarm['currency'];
             $currentRate = $this->apiAdaptor->getRate($currency);
 
             if (
@@ -141,8 +143,8 @@ class Handler
         preg_match('/alarm (\w+) (\w+) ([-+]?[0-9]*\.?[0-9]*)/', $text, $matches);
 
         $currency = $matches[1] ?? null;
-        $sign     = $matches[2] ?? null;
-        $rate     = $matches[3] ?? 0;
+        $sign = $matches[2] ?? null;
+        $rate = $matches[3] ?? 0;
 
         if (!in_array($currency, self::getAvailableCrypto())) {
             $this->sendMessage($userId, 'Please select correct currency');
@@ -264,10 +266,10 @@ class Handler
      */
     protected function createUser(int $chatId, array $params): void
     {
-        $firstName = $params['first_name']    ?? '';
-        $lastName  = $params['last_name']     ?? '';
-        $language  = $params['language_code'] ?? '';
-        $username  = $params['username']      ?? '';
+        $firstName = $params['first_name'] ?? '';
+        $lastName = $params['last_name'] ?? '';
+        $language = $params['language_code'] ?? '';
+        $username = $params['username'] ?? '';
 
         DB::exec(
             "insert into users (telegram_id, first_name, last_name, username, language_code) values " .
