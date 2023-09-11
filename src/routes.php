@@ -69,37 +69,27 @@ $app->get('/notify', function (Request $request, Response $response) {
  *
  */
 $app->post('/webhook', function (Request $request, Response $httpResponse) {
-    if (!in_array(getenv('API_TOKEN'), $request->getHeader('X-Telegram-Bot-Api-Secret-Token'))) {
+    $apiToken = getenv('API_TOKEN');
+    $clientApiToken = $request->getHeader('X-Telegram-Bot-Api-Secret-Token');
+    if (!in_array($apiToken, $clientApiToken)) {
         return $httpResponse->withStatus(401);
     }
 
-    $json = $request->getBody();
-    $responseData = json_decode($json, true);
+    $jsonData = $request->getBody();
+    $responseData = json_decode($jsonData, true);
 
     $response = new TelegramResponse($responseData);
     $user = DB::queryOne("select * from users where telegram_id = $response->id");
 
-    $handler = new TelegramHandler();
-    $handler->user = $user;
-
-    # Create new user
+    $handler = new TelegramHandler($response, $user);
+    # Process create new User
     if (!$user) {
-        $handler->sendWelcome($response);
-        return $httpResponse;
+        $handler->createUser();
+        $handler->sendWelcome();
     }
-
-    # Ignore banned users or invalid requests
-    if (!$user->active || !$response->isValid) {
-        return $httpResponse;
-    }
-
     # Process answering
-    if (!$response->isCommand) {
-        $handler->processAnswerNoCommand($response->text);
-    } else if ($response->isCallback) {
-        $handler->processCallBack($response->text, $response->callbackId);
-    } else {
-        $handler->processAnswerCommand($response);
+    else if ($user->active && $response->isValid) {
+        $handler->processAnswer();
     }
 
     return $httpResponse;

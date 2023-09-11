@@ -27,44 +27,66 @@ class Handler
 
     public $user;
 
+    public TelegramResponse $response;
+    protected $chatId;
+
     /**
+     * @param Response $response
+     * @param $user
      * @param RateAdaptor|null $apiAdaptor
      */
-    public function __construct(?BaseAdaptor $apiAdaptor = null)
+    public function __construct(TelegramResponse $response, $user, ?BaseAdaptor $apiAdaptor = null)
     {
         $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
         $this->telegramAdaptor = new Adaptor();
         $this->db = new DB();
+
+        $this->response = $response;
+        $this->chatId = $response->id;
+        $this->user = $user;
     }
 
-    public function processCallBack(string $responseText, int $callBackId): bool
-    {
-        return match ($responseText) {
-            TelegramResponse::COMMAND_USERS => $this->sendUsers($callBackId),
-            TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY => $this->sendAnswerCallback($callBackId, 'Now you will get crypto rate every day'),
-            TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR => $this->sendAnswerCallback($callBackId, 'Now you will get crypto rate every hour'),
-            TelegramResponse::COMMAND_SCHEDULE_DISABLE => $this->sendAnswerCallback($callBackId, 'Schedule disabled'),
-            default => false
-        };
-    }
-
-    public function processAnswerCommand($response): bool
-    {
-        return match ($response->text) {
-            TelegramResponse::COMMAND_START => $this->sendWelcome($response),
-            TelegramResponse::COMMAND_SCHEDULE => $this->sendScheduleMenu($this->user->telegram_id),
-            TelegramResponse::COMMAND_CREATE_ALARM => $this->sendAlarmInfo($this->user->telegram_id),
-            TelegramResponse::COMMAND_SHOW_RATE => $this->sendCurrentRate($this->user->telegram_id),
-            default => false
-        };
-    }
-
-    public function processAnswerNoCommand(string $responseText): bool
+    /**
+     * @return bool
+     */
+    public function processAnswer(): bool
     {
         return match (true) {
-            str_starts_with($responseText, 'alarm') => $this->setUserAlarm($this->user->telegram_id, $responseText),
-            $this->user->is_admin => $this->sendAdminMenu($this->user->telegram_id),
-            default => $this->sendCurrentRate($this->user->telegram_id)
+            !$this->user => $this->sendWelcome(),
+            !$this->response->isCommand => $this->processAnswerNoCommand(),
+            $this->response->isCallback => $this->processCallBack(),
+            default => $this->processAnswerCommand()
+        };
+    }
+
+    public function processCallBack(): bool
+    {
+        return match ($this->response->text) {
+            TelegramResponse::COMMAND_USERS => $this->sendUsersCallback(),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY => $this->sendAnswerCallback('Now you will get crypto rate every day'),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR => $this->sendAnswerCallback('Now you will get crypto rate every hour'),
+            TelegramResponse::COMMAND_SCHEDULE_DISABLE => $this->sendAnswerCallback('Schedule disabled'),
+            default => false
+        };
+    }
+
+    public function processAnswerCommand(): bool
+    {
+        return match ($this->response->text) {
+            TelegramResponse::COMMAND_START => $this->sendWelcome(),
+            TelegramResponse::COMMAND_SCHEDULE => $this->sendScheduleMenu(),
+            TelegramResponse::COMMAND_CREATE_ALARM => $this->sendAlarmInfo(),
+            TelegramResponse::COMMAND_SHOW_RATE => $this->sendCurrentRate(),
+            default => false
+        };
+    }
+
+    public function processAnswerNoCommand(): bool
+    {
+        return match (true) {
+            str_starts_with($this->response->text, 'alarm') => $this->setUserAlarm($this->response->text),
+            $this->user->is_admin => $this->sendAdminMenu(),
+            default => $this->sendCurrentRate()
         };
     }
 
@@ -119,7 +141,7 @@ class Handler
             foreach ($data as $item) {
                 $currentRate = $item['value'];
                 $currency = $item['currency'];
-                $lastRate = $this->getLastUserRate($chatId, $currency);
+                $lastRate = $this->getLastUserRate($currency);
 
                 $message .= $this->getCurrencyName($currency) .
                     ': ' . $this->getRateMessage($currentRate, $lastRate) .
@@ -166,16 +188,16 @@ class Handler
     }
 
     /**
-     * @param int $userId
      * @param string $text
      *
      * @return bool
      */
-    public function setUserAlarm(int $userId, string $text): bool
+    public function setUserAlarm(string $text): bool
     {
         $matches = [];
         preg_match('/alarm (\w+) (\w+) ([-+]?[0-9]*\.?[0-9]*)/', $text, $matches);
 
+        $userId = $this->user->id;
         $currency = $matches[1] ?? null;
         $sign = $matches[2] ?? null;
         $rate = $matches[3] ?? 0;
@@ -200,11 +222,10 @@ class Handler
     }
 
     /**
-     * @param int $chatId
      *
      * @return bool
      */
-    public function sendCurrentRate(int $chatId): bool
+    public function sendCurrentRate(): bool
     {
         $data = array_map(
             fn($currency) => [
@@ -215,59 +236,51 @@ class Handler
         );
 
         $message = '';
-
         foreach ($data as $item) {
             $currentRate = $item['value'];
             $currency = $item['currency'];
-            $lastRate = $this->getLastUserRate($chatId, $currency);
+            $lastRate = $this->getLastUserRate($currency);
 
             $message .= $this->getCurrencyName($currency) .
                 ': ' . $this->getRateMessage($currentRate, $lastRate) .
                 PHP_EOL;
 
-            $this->updateUserRate($chatId, $currentRate, $currency);
+            $this->updateUserRate($this->chatId, $currentRate, $currency);
         }
 
-        return $this->telegramAdaptor->sendMessage($chatId, $message);
+        return $this->telegramAdaptor->sendMessage($this->chatId, $message);
     }
 
     /**
-     * @param int $chatId
-     *
      * @return bool
      */
-    public function sendAdminMenu(int $chatId): bool
+    public function sendAdminMenu(): bool
     {
         $markupParams = [
             "Show users" => Response::COMMAND_USERS,
             "Show rate" => Response::COMMAND_SHOW_RATE
         ];
 
-        return $this->sendMessage($chatId, 'Hello admin!', $markupParams);
+        return $this->sendMessage('Hello admin!', $markupParams);
     }
 
     /**
-     * @param int|null $chatId
-     *
      * @return bool
      */
-    public function sendUsers(?int $chatId): bool
+    public function sendUsersCallback(): bool
     {
-        if ($this->user->is_admin == 1 || is_null($chatId)) {
+        if ($this->user->is_admin == 1 || !$this->user) {
             return false;
         }
-
         $raw = DB::queryOne("select count(*) as cc from users");
 
-        return $this->sendAnswerCallback($chatId, $raw->cc);
+        return $this->sendAnswerCallback( $raw->cc);
     }
 
     /**
-     * @param int $chatId
-     *
      * @return bool
      */
-    public function sendScheduleMenu(int $chatId): bool
+    public function sendScheduleMenu(): bool
     {
         $markupParams = [
             "Every day" => Response::COMMAND_SCHEDULE_EVERY_DAY,
@@ -275,33 +288,25 @@ class Handler
             "Disable notifications" => Response::COMMAND_SCHEDULE_DISABLE
         ];
 
-        return $this->sendMessage($chatId, 'Set up your notification schedule', $markupParams);
+        return $this->sendMessage('Set up your notification schedule', $markupParams);
     }
 
     /**
-     * @param Response $response
-     *
      * @return bool
      */
-    public function sendWelcome(Response $response): bool
+    public function sendWelcome(): bool
     {
-        $raw = DB::query("select id from users where telegram_id = " . $response->id);
-        if (ArrayHelper::isEmpty($raw)) {
-            $this->createUser($response->id, $response->userInfo);
-        }
-
-        $this->sendMessage($response->id, 'Welcome to BTC rate bot!');
-        return $this->sendCurrentRate($response->id);
+        $this->sendMessage($this->chatId, 'Welcome to BTC rate bot!');
+        return $this->sendCurrentRate();
     }
 
     /**
-     * @param int $chatId
-     * @param array $params
-     *
      * @return void
      */
-    protected function createUser(int $chatId, array $params): void
+    public function createUser(): void
     {
+        $params = $this->response->userInfo;
+
         $firstName = $params['first_name'] ?? '';
         $lastName = $params['last_name'] ?? '';
         $language = $params['language_code'] ?? '';
@@ -309,66 +314,61 @@ class Handler
 
         DB::exec(
             "insert into users (telegram_id, first_name, last_name, username, language_code) values " .
-            "($chatId, '$firstName', '$lastName', '$username', '$language')"
+            "($this->chatId, '$firstName', '$lastName', '$username', '$language')"
         );
 
         $currencies = $this->getAvailableCrypto();
         foreach ($currencies as $currency) {
             DB::exec(
                 "insert into user_rates (user_id, currency, value) values " .
-                "($chatId, '$currency', 0)"
+                "($this->chatId, '$currency', 0)"
             );
         }
     }
 
     /**
-     * @param int $chatId
      * @param string $currency
      *
      * @return float
      */
-    protected function getLastUserRate(int $chatId, string $currency): float
+    protected function getLastUserRate(string $currency): float
     {
-        $raw = DB::queryOne("select value from user_rates where user_id = $chatId and currency = '$currency'");
+        $raw = DB::queryOne("select value from user_rates where user_id = " . $this->chatId . " and currency = '$currency'");
 
         return (float)($raw->value ?? 0);
     }
 
     /**
-     * @param int $chatId
-     *
      * @return bool
      */
-    public function sendAlarmInfo(int $chatId): bool
+    public function sendAlarmInfo(): bool
     {
         return $this->sendMessage(
-            $chatId,
             "You can get notification when selected currency rate will be more/lower than your price.\n" .
             "Write your alarm template, for example: alarm btc less 22000 \n"
         );
     }
 
     /**
-     * @param int $callbackId
      * @param string $text
      *
      * @return bool
      */
-    public function sendAnswerCallback(int $callbackId, string $text): bool
+    public function sendAnswerCallback(string $text): bool
     {
+        $callbackId = $this->response->callbackId;
         return $this->telegramAdaptor->sendAnswerCallback($callbackId, $text);
     }
 
     /**
-     * @param int $chatId
      * @param string $text
      * @param array $markupParams
      *
      * @return bool
      */
-    protected function sendMessage(int $chatId, string $text, array $markupParams = []): bool
+    protected function sendMessage(string $text, array $markupParams = []): bool
     {
-        return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
+        return $this->telegramAdaptor->sendMessage($this->chatId, $text, $markupParams);
     }
 
     /**
@@ -393,6 +393,6 @@ class Handler
     protected function updateUserRate(int $chatId, float $rate, string $currency): void
     {
         DB::exec("UPDATE user_rates set value = " . number_format($rate, 3, '.', '')
-            . "  where user_id = {$chatId} and currency = '{$currency}'");
+            . "  where user_id = {$this->chatId} and currency = '{$currency}'");
     }
 }
