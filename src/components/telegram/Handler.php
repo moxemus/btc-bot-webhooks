@@ -6,6 +6,7 @@ use src\components\rateApi\BaseAdaptor as RateAdaptor;
 use src\components\rateApi\MessariAdaptor;
 use moxemus\array\Helper as ArrayHelper;
 use src\components\rateApi\BaseAdaptor;
+use src\components\telegram\Response as TelegramResponse;
 use src\config\DB;
 
 class Handler
@@ -24,6 +25,8 @@ class Handler
     protected BaseAdaptor $apiAdaptor;
     protected DB $db;
 
+    public $user;
+
     /**
      * @param RateAdaptor|null $apiAdaptor
      */
@@ -32,6 +35,37 @@ class Handler
         $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
         $this->telegramAdaptor = new Adaptor();
         $this->db = new DB();
+    }
+
+    public function processCallBack(string $responseText, int $callBackId): bool
+    {
+        return match ($responseText) {
+            TelegramResponse::COMMAND_USERS => $this->sendUsers($callBackId),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY => $this->sendAnswerCallback($callBackId, 'Now you will get crypto rate every day'),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR => $this->sendAnswerCallback($callBackId, 'Now you will get crypto rate every hour'),
+            TelegramResponse::COMMAND_SCHEDULE_DISABLE => $this->sendAnswerCallback($callBackId, 'Schedule disabled'),
+            default => false
+        };
+    }
+
+    public function processAnswerCommand($response): bool
+    {
+        return match ($response->text) {
+            TelegramResponse::COMMAND_START => $this->sendWelcome($response),
+            TelegramResponse::COMMAND_SCHEDULE => $this->sendScheduleMenu($this->user->telegram_id),
+            TelegramResponse::COMMAND_CREATE_ALARM => $this->sendAlarmInfo($this->user->telegram_id),
+            TelegramResponse::COMMAND_SHOW_RATE => $this->sendCurrentRate($this->user->telegram_id),
+            default => false
+        };
+    }
+
+    public function processAnswerNoCommand(string $responseText): bool
+    {
+        return match (true) {
+            str_starts_with($responseText, 'alarm') => $this->setUserAlarm($this->user->telegram_id, $responseText),
+            $this->user->is_admin => $this->sendAdminMenu($this->user->telegram_id),
+            default => $this->sendCurrentRate($this->user->telegram_id)
+        };
     }
 
     /**
@@ -135,9 +169,9 @@ class Handler
      * @param int $userId
      * @param string $text
      *
-     * @return void
+     * @return bool
      */
-    public function setUserAlarm(int $userId, string $text): void
+    public function setUserAlarm(int $userId, string $text): bool
     {
         $matches = [];
         preg_match('/alarm (\w+) (\w+) ([-+]?[0-9]*\.?[0-9]*)/', $text, $matches);
@@ -161,6 +195,8 @@ class Handler
 
             $this->sendMessage($userId, 'New alarm configured');
         }
+
+        return true;
     }
 
     /**
@@ -217,7 +253,7 @@ class Handler
      */
     public function sendUsers(?int $chatId): bool
     {
-        if (is_null($chatId)) {
+        if ($this->user->is_admin == 1 || is_null($chatId)) {
             return false;
         }
 
