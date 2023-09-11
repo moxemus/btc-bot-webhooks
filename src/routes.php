@@ -78,13 +78,18 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
 
     $response = new TelegramResponse($responseDate);
     $user = DB::queryOne("select * from users where telegram_id = $response->id");
+    $handler = new TelegramHandler();
+
+    # Create new user
+    if (!$user) {
+        $handler->sendWelcome($response);
+        return $httpResponse;
+    }
 
     # Ignore banned users
     if (!$user->active || !$response->isValid) {
         return $httpResponse;
     }
-
-    $handler = new TelegramHandler();
 
     if (!$response->isCommand) {
         switch (true) {
