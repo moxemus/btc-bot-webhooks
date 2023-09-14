@@ -79,17 +79,11 @@ $app->post('/webhook', function (Request $request, Response $httpResponse) {
     $responseData = json_decode($jsonData, true);
 
     $response = new TelegramResponse($responseData);
-    $user = DB::queryOne("select * from users where telegram_id = $response->id");
+    $handler = new TelegramHandler();
 
-    $handler = new TelegramHandler($response, $user);
-    # Process create new User
-    if (!$user) {
-        $handler->createUser();
-        $handler->sendWelcome();
-    }
     # Process answering
-    else if ($user->active && $response->isValid) {
-        $handler->processAnswer();
+    if ($response->isValid) {
+        $handler->processAnswer($response);
     }
 
     return $httpResponse;

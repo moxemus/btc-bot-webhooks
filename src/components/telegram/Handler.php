@@ -25,68 +25,63 @@ class Handler
     protected BaseAdaptor $apiAdaptor;
     protected DB $db;
 
-    public $user;
-
-    public TelegramResponse $response;
-    protected $chatId;
-
     /**
-     * @param Response $response
-     * @param $user
      * @param RateAdaptor|null $apiAdaptor
      */
-    public function __construct(TelegramResponse $response, $user, ?BaseAdaptor $apiAdaptor = null)
+    public function __construct(?BaseAdaptor $apiAdaptor = null)
     {
         $this->apiAdaptor = $apiAdaptor ?? new MessariAdaptor();
         $this->telegramAdaptor = new Adaptor();
         $this->db = new DB();
-
-        $this->response = $response;
-        $this->chatId = $response->id;
-        $this->user = $user;
     }
 
     /**
+     * @param Response $response
+     *
      * @return bool
      */
-    public function processAnswer(): bool
+    public function processAnswer(TelegramResponse $response): bool
     {
+        $chatId = $response->id;
+        $text = $response->text;
+        $user = DB::queryOne("select id, is_admin from users where telegram_id = $response->id");
+
         return match (true) {
-            !$this->user => $this->sendWelcome(),
-            !$this->response->isCommand => $this->processAnswerNoCommand(),
-            $this->response->isCallback => $this->processCallBack(),
-            default => $this->processAnswerCommand()
+            !$user => $this->sendWelcome($chatId) && $this->createUser($chatId, $response->userInfo),
+            !$response->isCommand => $this->processAnswerNoCommand($chatId, $text, $user->is_admin),
+            $response->isCallback => $this->processCallBack($response->callbackId, $text, $user->is_admin),
+            default => $this->processAnswerCommand($chatId, $text)
         };
     }
 
-    public function processCallBack(): bool
+    public function processCallBack(int $callbackId, string $text, bool $isAdmin  = false): bool
     {
-        return match ($this->response->text) {
-            TelegramResponse::COMMAND_USERS => $this->sendUsersCallback(),
-            TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY => $this->sendAnswerCallback('Now you will get crypto rate every day'),
-            TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR => $this->sendAnswerCallback('Now you will get crypto rate every hour'),
-            TelegramResponse::COMMAND_SCHEDULE_DISABLE => $this->sendAnswerCallback('Schedule disabled'),
+        return match ($text) {
+            TelegramResponse::COMMAND_USERS => $this->sendUsersCallback($callbackId, $isAdmin),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_DAY => $this->sendAnswerCallback($callbackId, 'Now you will get crypto rate every day'),
+            TelegramResponse::COMMAND_SCHEDULE_EVERY_HOUR => $this->sendAnswerCallback($callbackId, 'Now you will get crypto rate every hour'),
+            TelegramResponse::COMMAND_SCHEDULE_DISABLE => $this->sendAnswerCallback($callbackId, 'Schedule disabled'),
             default => false
         };
     }
 
-    public function processAnswerCommand(): bool
+    public function processAnswerCommand(int $chatId, string $text): bool
     {
-        return match ($this->response->text) {
-            TelegramResponse::COMMAND_START => $this->sendWelcome(),
-            TelegramResponse::COMMAND_SCHEDULE => $this->sendScheduleMenu(),
-            TelegramResponse::COMMAND_CREATE_ALARM => $this->sendAlarmInfo(),
-            TelegramResponse::COMMAND_SHOW_RATE => $this->sendCurrentRate(),
+        return match ($text) {
+            TelegramResponse::COMMAND_START => $this->sendWelcome($chatId),
+            TelegramResponse::COMMAND_SCHEDULE => $this->sendScheduleMenu($chatId),
+            TelegramResponse::COMMAND_CREATE_ALARM => $this->sendAlarmInfo($chatId),
+            TelegramResponse::COMMAND_SHOW_RATE => $this->sendCurrentRate($chatId),
             default => false
         };
     }
 
-    public function processAnswerNoCommand(): bool
+    public function processAnswerNoCommand(int $chatId, string $text, bool $isAdmin = false): bool
     {
         return match (true) {
-            str_starts_with($this->response->text, 'alarm') => $this->setUserAlarm($this->response->text),
-            $this->user->is_admin => $this->sendAdminMenu(),
-            default => $this->sendCurrentRate()
+            str_starts_with($text, 'alarm') => $this->setUserAlarm($chatId, $text),
+            $isAdmin => $this->sendAdminMenu($chatId),
+            default => $this->sendCurrentRate($chatId)
         };
     }
 
@@ -175,7 +170,7 @@ class Handler
                 $text = ($isBigger) ? 'more' : 'less';
                 $message =
                     self::SMILE_EXCLAMATION .
-                    "{$currency} costs is {$text} than {$userRate} now - {$currentRate}" .
+                    "{$currency} costs is {$text} than {$userRate} now - $currentRate" .
                     self::SMILE_EXCLAMATION;
 
                 $this->telegramAdaptor->sendMessage($chatId, $message);
@@ -188,44 +183,45 @@ class Handler
     }
 
     /**
+     * @param $chatId
      * @param string $text
      *
      * @return bool
      */
-    public function setUserAlarm(string $text): bool
+    public function setUserAlarm($chatId, string $text): bool
     {
         $matches = [];
         preg_match('/alarm (\w+) (\w+) ([-+]?[0-9]*\.?[0-9]*)/', $text, $matches);
 
-        $userId = $this->user->id;
         $currency = $matches[1] ?? null;
         $sign = $matches[2] ?? null;
         $rate = $matches[3] ?? 0;
 
         if (!in_array($currency, self::getAvailableCrypto())) {
-            $this->sendMessage($userId, 'Please select correct currency');
+            $this->sendMessage($chatId, 'Please select correct currency');
         } elseif (!in_array($sign, ['more', 'less']) || $rate <= 0) {
-            $this->sendMessage($userId, 'Please give correct info');
+            $this->sendMessage($chatId, 'Please give correct info');
         } else {
             $isBigger = intval($sign == 'more');
 
-            DB::exec("delete from user_alarms where user_id = $userId");
+            DB::exec("delete from user_alarms where user_id = $chatId");
             DB::exec(
                 "insert into user_alarms (user_id, rate, is_bigger, currency, active) " .
-                "values ($userId, $rate, $isBigger, $currency, 1)"
+                "values ($chatId, $rate, $isBigger, $currency, 1)"
             );
 
-            $this->sendMessage($userId, 'New alarm configured');
+            $this->sendMessage($chatId, 'New alarm configured');
         }
 
         return true;
     }
 
     /**
+     * @param int $chatId
      *
      * @return bool
      */
-    public function sendCurrentRate(): bool
+    public function sendCurrentRate(int $chatId): bool
     {
         $data = array_map(
             fn($currency) => [
@@ -245,42 +241,50 @@ class Handler
                 ': ' . $this->getRateMessage($currentRate, $lastRate) .
                 PHP_EOL;
 
-            $this->updateUserRate($this->chatId, $currentRate, $currency);
+            $this->updateUserRate($chatId, $currentRate, $currency);
         }
 
-        return $this->telegramAdaptor->sendMessage($this->chatId, $message);
+        return $this->telegramAdaptor->sendMessage($chatId, $message);
     }
 
     /**
+     * @param int $chatId
+     *
      * @return bool
      */
-    public function sendAdminMenu(): bool
+    public function sendAdminMenu(int $chatId): bool
     {
         $markupParams = [
             "Show users" => Response::COMMAND_USERS,
             "Show rate" => Response::COMMAND_SHOW_RATE
         ];
 
-        return $this->sendMessage('Hello admin!', $markupParams);
+        return $this->sendMessage($chatId, 'Hello admin!', $markupParams);
     }
 
     /**
+     * @param $chatId
+     * @param bool $isAdmin
+     *
      * @return bool
      */
-    public function sendUsersCallback(): bool
+    public function sendUsersCallback($chatId, bool $isAdmin = false): bool
     {
-        if ($this->user->is_admin == 1 || !$this->user) {
+        if (!$isAdmin) {
             return false;
         }
+
         $raw = DB::queryOne("select count(*) as cc from users");
 
-        return $this->sendAnswerCallback( $raw->cc);
+        return $this->sendAnswerCallback($chatId, $raw->cc);
     }
 
     /**
+     * @param int $chatId
+     *
      * @return bool
      */
-    public function sendScheduleMenu(): bool
+    public function sendScheduleMenu(int $chatId): bool
     {
         $markupParams = [
             "Every day" => Response::COMMAND_SCHEDULE_EVERY_DAY,
@@ -288,25 +292,43 @@ class Handler
             "Disable notifications" => Response::COMMAND_SCHEDULE_DISABLE
         ];
 
-        return $this->sendMessage('Set up your notification schedule', $markupParams);
+        return $this->sendMessage($chatId, 'Set up your notification schedule', $markupParams);
     }
 
     /**
+     * @param int $chatId
+     *
      * @return bool
      */
-    public function sendWelcome(): bool
+    public function sendWelcome(int $chatId): bool
     {
-        $this->sendMessage($this->chatId, 'Welcome to BTC rate bot!');
-        return $this->sendCurrentRate();
+        $this->sendMessage($chatId, 'Welcome to BTC rate bot!');
+        return $this->sendCurrentRate($chatId);
     }
 
     /**
-     * @return void
+     * @param string $userName
+     *
+     * @return bool
      */
-    public function createUser(): void
+    public function notifyNewUserAdmins(string $userName): bool
     {
-        $params = $this->response->userInfo;
+        $adminsIds = [];
+        foreach ($adminsIds as $chatId) {
+            $this->sendMessage($chatId, "New user joined - $userName");
+        }
 
+        return true;
+    }
+
+    /**
+     * @param int $chatId
+     * @param array $params
+     *
+     * @return string
+     */
+    public function createUser(int $chatId, array $params): string
+    {
         $firstName = $params['first_name'] ?? '';
         $lastName = $params['last_name'] ?? '';
         $language = $params['language_code'] ?? '';
@@ -314,61 +336,70 @@ class Handler
 
         DB::exec(
             "insert into users (telegram_id, first_name, last_name, username, language_code) values " .
-            "($this->chatId, '$firstName', '$lastName', '$username', '$language')"
+            "($chatId, '$firstName', '$lastName', '$username', '$language')"
         );
 
         $currencies = $this->getAvailableCrypto();
         foreach ($currencies as $currency) {
             DB::exec(
                 "insert into user_rates (user_id, currency, value) values " .
-                "($this->chatId, '$currency', 0)"
+                "($chatId, '$currency', 0)"
             );
         }
+
+        return empty($username)
+            ? "$firstName $lastName"
+            : $username;
     }
 
     /**
+     * @param int $chatId
      * @param string $currency
      *
      * @return float
      */
-    protected function getLastUserRate(string $currency): float
+    protected function getLastUserRate(int $chatId, string $currency): float
     {
-        $raw = DB::queryOne("select value from user_rates where user_id = " . $this->chatId . " and currency = '$currency'");
+        $raw = DB::queryOne("select value from user_rates where user_id = " . $chatId . " and currency = '$currency'");
 
         return (float)($raw->value ?? 0);
     }
 
     /**
+     * @param int $chatId
+     *
      * @return bool
      */
-    public function sendAlarmInfo(): bool
+    public function sendAlarmInfo(int $chatId): bool
     {
         return $this->sendMessage(
+            $chatId,
             "You can get notification when selected currency rate will be more/lower than your price.\n" .
             "Write your alarm template, for example: alarm btc less 22000 \n"
         );
     }
 
     /**
+     * @param int $callbackId
      * @param string $text
      *
      * @return bool
      */
-    public function sendAnswerCallback(string $text): bool
+    public function sendAnswerCallback(int $callbackId, string $text): bool
     {
-        $callbackId = $this->response->callbackId;
         return $this->telegramAdaptor->sendAnswerCallback($callbackId, $text);
     }
 
     /**
+     * @param int $chatId
      * @param string $text
      * @param array $markupParams
      *
      * @return bool
      */
-    protected function sendMessage(string $text, array $markupParams = []): bool
+    protected function sendMessage(int $chatId, string $text, array $markupParams = []): bool
     {
-        return $this->telegramAdaptor->sendMessage($this->chatId, $text, $markupParams);
+        return $this->telegramAdaptor->sendMessage($chatId, $text, $markupParams);
     }
 
     /**
@@ -393,6 +424,6 @@ class Handler
     protected function updateUserRate(int $chatId, float $rate, string $currency): void
     {
         DB::exec("UPDATE user_rates set value = " . number_format($rate, 3, '.', '')
-            . "  where user_id = {$this->chatId} and currency = '{$currency}'");
+            . "  where user_id = {$chatId} and currency = '{$currency}'");
     }
 }
